@@ -1,9 +1,20 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import {
+  User,
+  signInWithPopup,
+  signOut as firebaseSignOut,
+  onAuthStateChanged
+} from 'firebase/auth';
+import { auth, googleProvider } from './config';
 import { UserProfile, Student, UserRole, StudentStatus } from '../types';
-import { INITIAL_STUDENTS } from '../data/seedData';
-import { initializeDatabaseIfEmpty, logAuditEvent } from './firestoreService';
+import {
+  getStudentByEmail,
+  saveStudent,
+  initializeDatabaseIfEmpty,
+  logAuditEvent
+} from './firestoreService';
 
-export interface DemoUser {
+export interface AppUser {
   uid: string;
   email: string;
   displayName: string;
@@ -11,7 +22,7 @@ export interface DemoUser {
 }
 
 interface AuthContextType {
-  currentUser: DemoUser | null;
+  currentUser: AppUser | null;
   userProfile: UserProfile | null;
   currentStudent: Student | null;
   userRole: UserRole;
@@ -19,91 +30,145 @@ interface AuthContextType {
   loading: boolean;
   isAuthorized: boolean;
   signInWithGoogle: () => Promise<void>;
-  signInDemo: (role: UserRole) => Promise<void>;
+  signInTeacher: (password: string) => Promise<void>;
   signOut: () => Promise<void>;
   switchRoleForTesting: (role: UserRole) => void;
   refreshStudentData: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-const SESSION_KEY = 'historykaz-session';
+const TEACHER_SESSION = 'historykaz-teacher';
+const TEACHER_PASSWORD = 'Akylbek8080@#$';
 
-const DEMO: Record<UserRole, { email: string; name: string; student: Student | null }> = {
-  STUDENT: {
-    email: INITIAL_STUDENTS[0].googleEmail,
-    name: INITIAL_STUDENTS[0].fullName,
-    student: INITIAL_STUDENTS[0]
-  },
-  TEACHER: {
-    email: 'sarsenbayev.teacher@gmail.com',
-    name: 'А. Сәрсенбаев',
-    student: null
-  },
-  SUPER_ADMIN: {
-    email: 'akonyaalex@gmail.com',
-    name: 'Әкімші',
-    student: INITIAL_STUDENTS[0]
-  }
-};
+function toAppUser(user: User): AppUser {
+  return {
+    uid: user.uid,
+    email: user.email || '',
+    displayName: user.displayName || 'Студент',
+    photoURL: user.photoURL
+  };
+}
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<DemoUser | null>(null);
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [currentStudent, setCurrentStudent] = useState<Student | null>(null);
   const [userRole, setUserRole] = useState<UserRole>('STUDENT');
   const [studentStatus, setStudentStatus] = useState<StudentStatus | 'Unknown' | 'NotFound'>('Unknown');
   const [loading, setLoading] = useState<boolean>(true);
 
-  const applySession = (role: UserRole) => {
-    const demo = DEMO[role];
-    const user: DemoUser = {
-      uid: 'demo-' + role.toLowerCase(),
-      email: demo.email,
-      displayName: demo.name,
+  const applyTeacher = () => {
+    const user: AppUser = {
+      uid: 'teacher-sarsenbayev',
+      email: 'zhalgasbaevaaaa@gmail.com',
+      displayName: 'Профессор Сарсенбаев А.Б.',
       photoURL: null
     };
     setCurrentUser(user);
-    setUserRole(role);
-    setCurrentStudent(demo.student);
-    setStudentStatus(demo.student?.status || (role === 'SUPER_ADMIN' ? 'Active' : 'Unknown'));
+    setUserRole('TEACHER');
+    setCurrentStudent(null);
+    setStudentStatus('Unknown');
     setUserProfile({
       uid: user.uid,
-      email: demo.email,
-      displayName: demo.name,
-      role,
-      studentId: demo.student?.studentId,
-      group: demo.student?.group,
+      email: user.email,
+      displayName: user.displayName,
+      role: 'TEACHER',
+      teacherId: 'T-01',
       createdAt: new Date().toISOString(),
       lastLoginAt: new Date().toISOString()
     });
-    localStorage.setItem(SESSION_KEY, role);
-    logAuditEvent('DEMO_LOGIN', demo.email, role, 'Демо кіру');
+    localStorage.setItem(TEACHER_SESSION, '1');
+  };
+
+  const registerGoogleStudent = async (user: AppUser) => {
+    const email = user.email.toLowerCase().trim();
+    let student = await getStudentByEmail(email);
+    if (!student) {
+      student = {
+        id: 'ST-' + user.uid.slice(0, 8),
+        studentId: 'ST-' + user.uid.slice(0, 8),
+        fullName: user.displayName || email.split('@')[0],
+        googleEmail: email,
+        group: '',
+        status: 'Active',
+        createdAt: new Date().toISOString()
+      };
+      await saveStudent(student);
+    }
+    setCurrentUser(user);
+    setUserRole('STUDENT');
+    setCurrentStudent(student);
+    setStudentStatus('Active');
+    setUserProfile({
+      uid: user.uid,
+      email,
+      displayName: user.displayName,
+      photoURL: user.photoURL || undefined,
+      role: 'STUDENT',
+      studentId: student.studentId,
+      group: student.group,
+      createdAt: student.createdAt,
+      lastLoginAt: new Date().toISOString()
+    });
+    logAuditEvent('GOOGLE_LOGIN', email, 'STUDENT', 'Google арқылы кіру');
   };
 
   useEffect(() => {
     initializeDatabaseIfEmpty().catch(console.warn);
-    const saved = localStorage.getItem(SESSION_KEY) as UserRole | null;
-    if (saved && DEMO[saved]) {
-      applySession(saved);
+
+    if (localStorage.getItem(TEACHER_SESSION) === '1') {
+      applyTeacher();
+      setLoading(false);
+      return;
     }
-    setLoading(false);
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user && user.email) {
+        await registerGoogleStudent(toAppUser(user));
+      } else {
+        setCurrentUser(null);
+        setUserProfile(null);
+        setCurrentStudent(null);
+        setStudentStatus('Unknown');
+        setUserRole('STUDENT');
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const signInWithGoogle = async () => {
-    await signInDemo('STUDENT');
-  };
-
-  const signInDemo = async (role: UserRole) => {
     setLoading(true);
-    applySession(role);
+    localStorage.removeItem(TEACHER_SESSION);
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      if (result.user) {
+        await registerGoogleStudent(toAppUser(result.user));
+      }
+    } catch (error: any) {
+      console.error('Google Sign-In error:', error);
+      setLoading(false);
+      throw error;
+    }
     setLoading(false);
   };
 
-  const signOut = async () => {
-    if (currentUser?.email) {
-      logAuditEvent('LOGOUT', currentUser.email, userRole, 'Жүйеден шығу');
+  const signInTeacher = async (password: string) => {
+    if (password !== TEACHER_PASSWORD) {
+      throw new Error('Қате құпиясөз');
     }
-    localStorage.removeItem(SESSION_KEY);
+    applyTeacher();
+    logAuditEvent('TEACHER_LOGIN', 'zhalgasbaevaaaa@gmail.com', 'TEACHER', 'Оқытушы кірді');
+  };
+
+  const signOut = async () => {
+    localStorage.removeItem(TEACHER_SESSION);
+    try {
+      await firebaseSignOut(auth);
+    } catch {
+      /* ignore */
+    }
     setCurrentUser(null);
     setUserProfile(null);
     setCurrentStudent(null);
@@ -111,18 +176,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUserRole('STUDENT');
   };
 
-  const switchRoleForTesting = (role: UserRole) => {
-    applySession(role);
-  };
+  const switchRoleForTesting = (_role: UserRole) => {};
 
   const refreshStudentData = async () => {
-    if (userRole) applySession(userRole);
+    if (currentUser && userRole === 'STUDENT') {
+      await registerGoogleStudent(currentUser);
+    }
   };
 
-  const isAuthorized =
-    userRole === 'SUPER_ADMIN' ||
-    userRole === 'TEACHER' ||
-    (userRole === 'STUDENT' && studentStatus === 'Active');
+  const isAuthorized = !!currentUser && (userRole === 'TEACHER' || studentStatus === 'Active');
 
   return (
     <AuthContext.Provider
@@ -135,7 +197,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loading,
         isAuthorized,
         signInWithGoogle,
-        signInDemo,
+        signInTeacher,
         signOut,
         switchRoleForTesting,
         refreshStudentData

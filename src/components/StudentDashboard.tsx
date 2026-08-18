@@ -116,46 +116,6 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onNavigateTa
       </div>
 
       <div className="max-w-xl mx-auto px-4 mt-4 space-y-6">
-        {/* Active / Next Lesson Banner Card */}
-        {currentLesson && (
-          <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-sky-500/30 rounded-3xl p-5 shadow-xl shadow-sky-950/40 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-sky-500/10 rounded-full blur-2xl pointer-events-none" />
-
-            <div className="flex items-center justify-between text-xs text-sky-400 font-semibold mb-2">
-              <span className="flex items-center gap-1.5 bg-sky-950/80 px-2.5 py-1 rounded-full border border-sky-800/50">
-                <Clock className="w-3.5 h-3.5 text-sky-400 animate-pulse" />
-                {currentLesson.startTime} – {currentLesson.endTime}
-              </span>
-              <span className="flex items-center gap-1 text-slate-400">
-                <MapPin className="w-3.5 h-3.5 text-rose-400" />
-                {currentLesson.classroom}-аудитория
-              </span>
-            </div>
-
-            <h3 className="text-lg sm:text-xl font-bold text-white leading-snug">
-              {currentLesson.subject}
-            </h3>
-
-            <div className="text-xs text-slate-300 mt-1.5 flex items-center gap-1.5">
-              <span>Оқытушы:</span>
-              <strong className="text-slate-100">{currentLesson.teacherName}</strong>
-            </div>
-
-            <div className="mt-4 pt-3.5 border-t border-slate-800/80 flex items-center justify-between">
-              {isAlreadyAttendedToday ? (
-                <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold bg-emerald-950/60 px-3 py-1.5 rounded-xl border border-emerald-800/60">
-                  <ShieldCheck className="w-4 h-4" />
-                  <span>Сіз сабаққа тіркелдіңіз (Қатысты)</span>
-                </div>
-              ) : (
-                <div className="text-xs text-amber-400 font-medium">
-                  Сабаққа қатысуды белгілеу үшін QR кодты сканерлеңіз
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* 4 PRIMARY TOUCH-FRIENDLY ACTION BUTTONS */}
         <div className="grid grid-cols-2 gap-3.5">
           {/* 1. Күнтізбе */}

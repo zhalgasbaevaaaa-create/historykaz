@@ -19,7 +19,7 @@ import {
   INITIAL_LESSONS
 } from '../data/seedData';
 
-const KEY = 'historykaz-db-v1';
+const KEY = 'historykaz-db-v2';
 
 interface LocalDb {
   settings: SystemSettings;

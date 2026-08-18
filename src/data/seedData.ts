@@ -29,102 +29,15 @@ export const INITIAL_TEACHERS: Teacher[] = [
   {
     id: 'T-01',
     teacherId: 'T-01',
-    fullName: 'А. Сәрсенбаев',
-    email: 'sarsenbayev.teacher@gmail.com',
-    department: 'Компьютерлік инженерия',
-    phone: '+7 777 123 4567',
-    status: 'Active'
-  },
-  {
-    id: 'T-02',
-    teacherId: 'T-02',
-    fullName: 'Г. Нұрғалиева',
-    email: 'nurgaliyeva.teacher@gmail.com',
-    department: 'Жасанды интеллект және Big Data',
-    phone: '+7 701 987 6543',
-    status: 'Active'
-  },
-  {
-    id: 'T-03',
-    teacherId: 'T-03',
-    fullName: 'М. Құдайбергенов',
-    email: 'kudaibergenov.teacher@gmail.com',
-    department: 'Ақпараттық қауіпсіздік',
-    phone: '+7 705 555 4433',
+    fullName: 'Профессор - Сарсенбаев А.Б.',
+    email: 'zhalgasbaevaaaa@gmail.com',
+    department: 'Тарих',
+    phone: '',
     status: 'Active'
   }
 ];
 
-export const INITIAL_STUDENTS: Student[] = [
-  {
-    id: 'ST-2026-001',
-    studentId: 'ST-2026-001',
-    fullName: 'Ахметов Айбек Қайратұлы',
-    googleEmail: 'akonyaalex@gmail.com', // Admin / Test Student
-    group: 'CS-2101',
-    status: 'Active',
-    notes: 'Студенттер кеңесінің төрағасы',
-    createdAt: '2026-01-15T08:00:00.000Z'
-  },
-  {
-    id: 'ST-2026-002',
-    studentId: 'ST-2026-002',
-    fullName: 'Сәрсенова Аружан Мұратқызы',
-    googleEmail: 'aruzhan.sarsenova@gmail.com',
-    group: 'CS-2101',
-    status: 'Active',
-    notes: 'Академиялық үздік',
-    createdAt: '2026-01-15T08:00:00.000Z'
-  },
-  {
-    id: 'ST-2026-003',
-    studentId: 'ST-2026-003',
-    fullName: 'Қасымов Данияр Ерланұлы',
-    googleEmail: 'daniyar.kassymov@gmail.com',
-    group: 'CS-2101',
-    status: 'Active',
-    notes: 'Хакатон жеңімпазы',
-    createdAt: '2026-01-15T08:00:00.000Z'
-  },
-  {
-    id: 'ST-2026-004',
-    studentId: 'ST-2026-004',
-    fullName: 'Бақытжанқызы Динара',
-    googleEmail: 'dinara.bakhytzhan@gmail.com',
-    group: 'IT-2204',
-    status: 'Active',
-    createdAt: '2026-01-15T08:00:00.000Z'
-  },
-  {
-    id: 'ST-2026-005',
-    studentId: 'ST-2026-005',
-    fullName: 'Оспанов Бауыржан Серікұлы',
-    googleEmail: 'bauyrzhan.ospanov@gmail.com',
-    group: 'IT-2204',
-    status: 'Active',
-    createdAt: '2026-01-15T08:00:00.000Z'
-  },
-  {
-    id: 'ST-2026-006',
-    studentId: 'ST-2026-006',
-    fullName: 'Ермеков Әлихан Болатұлы',
-    googleEmail: 'alikhan.ermekov@gmail.com',
-    group: 'IS-2302',
-    status: 'Inactive',
-    notes: 'Академиялық демалыста',
-    createdAt: '2026-01-15T08:00:00.000Z'
-  },
-  {
-    id: 'ST-2026-007',
-    studentId: 'ST-2026-007',
-    fullName: 'Мұхтаров Нұрсұлтан',
-    googleEmail: 'nursultan.mukhtarov@gmail.com',
-    group: 'AI-2401',
-    status: 'Blocked',
-    notes: 'Тәртіптік ереже бұзушылық',
-    createdAt: '2026-01-15T08:00:00.000Z'
-  }
-];
+export const INITIAL_STUDENTS: Student[] = [];
 
 export const INITIAL_LESSONS: Lesson[] = [
   {
@@ -135,7 +48,7 @@ export const INITIAL_LESSONS: Lesson[] = [
     endTime: '09:50',
     subject: 'Қазақстан тарихы',
     teacherId: 'T-01',
-    teacherName: 'А. Сәрсенбаев',
+    teacherName: 'Профессор - Сарсенбаев А.Б.',
     classroom: '301',
     group: 'CS-2101',
     isActive: true,
@@ -149,7 +62,7 @@ export const INITIAL_LESSONS: Lesson[] = [
     endTime: '10:50',
     subject: 'Веб-бағдарламалау (React/Node)',
     teacherId: 'T-01',
-    teacherName: 'А. Сәрсенбаев',
+    teacherName: 'Профессор - Сарсенбаев А.Б.',
     classroom: '408 (IT Lab)',
     group: 'CS-2101',
     isActive: true,
@@ -163,7 +76,7 @@ export const INITIAL_LESSONS: Lesson[] = [
     endTime: '12:00',
     subject: 'Алгоритмдер және деректер құрылымы',
     teacherId: 'T-02',
-    teacherName: 'Г. Нұрғалиева',
+    teacherName: 'Профессор - Сарсенбаев А.Б.',
     classroom: '215',
     group: 'CS-2101',
     isActive: true,
@@ -177,7 +90,7 @@ export const INITIAL_LESSONS: Lesson[] = [
     endTime: '14:20',
     subject: 'Деректер қоры (PostgreSQL & NoSQL)',
     teacherId: 'T-03',
-    teacherName: 'М. Құдайбергенов',
+    teacherName: 'Профессор - Сарсенбаев А.Б.',
     classroom: '312',
     group: 'IT-2204',
     isActive: true,
@@ -191,7 +104,7 @@ export const INITIAL_LESSONS: Lesson[] = [
     endTime: '09:50',
     subject: 'Жасанды интеллект негіздері',
     teacherId: 'T-02',
-    teacherName: 'Г. Нұрғалиева',
+    teacherName: 'Профессор - Сарсенбаев А.Б.',
     classroom: '502 (AI Lab)',
     group: 'CS-2101',
     isActive: true
@@ -204,7 +117,7 @@ export const INITIAL_LESSONS: Lesson[] = [
     endTime: '10:50',
     subject: 'Киберқауіпсіздік',
     teacherId: 'T-03',
-    teacherName: 'М. Құдайбергенов',
+    teacherName: 'Профессор - Сарсенбаев А.Б.',
     classroom: '204',
     group: 'CS-2101',
     isActive: true

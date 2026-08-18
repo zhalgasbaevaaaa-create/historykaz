@@ -7,7 +7,6 @@ import { StudentDashboard } from './components/StudentDashboard';
 import { CalendarView } from './components/CalendarView';
 import { AttendanceHistoryView } from './components/AttendanceHistoryView';
 import { TeacherDashboard } from './components/TeacherDashboard';
-import { AdminPanel } from './components/AdminPanel';
 import { ProfileView } from './components/ProfileView';
 import { InstallPwaPrompt } from './components/InstallPwaPrompt';
 import {
@@ -56,9 +55,7 @@ const MainApp: React.FC = () => {
       {/* Main Screen Router */}
       <main className="flex-1">
         {activeTab === 'home' && (
-          userRole === 'SUPER_ADMIN' ? (
-            <AdminPanel />
-          ) : userRole === 'TEACHER' ? (
+          userRole === 'TEACHER' ? (
             <TeacherDashboard />
           ) : (
             <StudentDashboard onNavigateTab={(tab) => setActiveTab(tab)} />
@@ -83,7 +80,7 @@ const MainApp: React.FC = () => {
 
         {activeTab === 'teacher_view' && <TeacherDashboard />}
 
-        {activeTab === 'admin_view' && <AdminPanel />}
+
       </main>
 
       {/* Mobile-First Bottom Navigation Bar */}

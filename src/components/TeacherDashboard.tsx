@@ -58,9 +58,7 @@ export const TeacherDashboard: React.FC = () => {
         setLessons(lessonList);
         setAllStudents(studentList);
 
-        if (lessonList.length > 0) {
-          setSelectedLessonId(lessonList[0].id);
-        }
+        setSelectedLessonId('OPEN-SESSION');
       } catch (err) {
         console.error('Error fetching teacher data:', err);
       } finally {
@@ -137,8 +135,19 @@ export const TeacherDashboard: React.FC = () => {
 
   // Handle QR Generation via backend API
   const handleGenerateQr = async () => {
-    const lesson = lessons.find((l) => l.id === selectedLessonId);
-    if (!lesson) return;
+    const lesson: Lesson = {
+      id: 'OPEN-SESSION',
+      lessonId: 'OPEN-SESSION',
+      date: new Date().toISOString().slice(0, 10),
+      startTime: '',
+      endTime: '',
+      subject: 'Сабақ',
+      teacherId: 'T-01',
+      teacherName: 'Профессор - Сарсенбаев А.Б.',
+      classroom: '',
+      group: 'ALL',
+      isActive: true
+    };
 
     try {
       setGenerating(true);
@@ -239,22 +248,17 @@ export const TeacherDashboard: React.FC = () => {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 mt-5 space-y-6">
-        {/* Lesson Selector */}
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4.5 shadow-md">
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 shadow-md">
           <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
             Сабақты таңдаңыз:
           </label>
           <select
             id="teacher-lesson-select"
-            value={selectedLessonId}
-            onChange={(e) => setSelectedLessonId(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3 text-sm text-slate-100 focus:outline-none focus:border-emerald-500 font-semibold transition"
+            value=""
+            disabled
+            className="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3 text-sm text-slate-500"
           >
-            {lessons.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.date} | {l.startTime}–{l.endTime} | {l.subject} ({l.group}) — {l.classroom}-ауд.
-              </option>
-            ))}
+            <option value="">—</option>
           </select>
         </div>
 

@@ -77,63 +77,6 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
         {/* User Info & Controls */}
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Role switcher for Admin test verification */}
-          {(userRole === 'SUPER_ADMIN' || currentUser?.email === 'akonyaalex@gmail.com') && (
-            <div className="relative">
-              <button
-                id="role-switch-dropdown-btn"
-                onClick={() => setShowRoleMenu(!showRoleMenu)}
-                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 transition"
-              >
-                <span>{badge.label}</span>
-                <ChevronDown className="w-3 h-3 text-slate-400" />
-              </button>
-
-              {showRoleMenu && (
-                <div className="absolute right-0 mt-2 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-xl p-1 z-50 text-xs">
-                  <div className="px-2 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    Рөлді ауыстыру (Тестілеу):
-                  </div>
-                  <button
-                    onClick={() => {
-                      switchRoleForTesting('STUDENT');
-                      setShowRoleMenu(false);
-                    }}
-                    className={`w-full text-left px-2.5 py-1.5 rounded-lg flex items-center gap-2 transition ${
-                      userRole === 'STUDENT' ? 'bg-sky-600 text-white font-bold' : 'text-slate-300 hover:bg-slate-800'
-                    }`}
-                  >
-                    <User className="w-3.5 h-3.5" />
-                    <span>Студент көрінісі</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      switchRoleForTesting('TEACHER');
-                      setShowRoleMenu(false);
-                    }}
-                    className={`w-full text-left px-2.5 py-1.5 rounded-lg flex items-center gap-2 transition ${
-                      userRole === 'TEACHER' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-300 hover:bg-slate-800'
-                    }`}
-                  >
-                    <BookOpen className="w-3.5 h-3.5" />
-                    <span>Оқытушы көрінісі</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      switchRoleForTesting('SUPER_ADMIN');
-                      setShowRoleMenu(false);
-                    }}
-                    className={`w-full text-left px-2.5 py-1.5 rounded-lg flex items-center gap-2 transition ${
-                      userRole === 'SUPER_ADMIN' ? 'bg-purple-600 text-white font-bold' : 'text-slate-300 hover:bg-slate-800'
-                    }`}
-                  >
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    <span>Бас Әкімші (Admin)</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
           {/* User badge */}
           <div className="flex items-center gap-2 bg-slate-800/80 px-2.5 py-1.5 rounded-xl border border-slate-700/60">
             {currentUser?.photoURL ? (
