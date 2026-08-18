@@ -1,12 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile, Student, UserRole, StudentStatus } from '../types';
 import {
-  getStudentByEmail,
+  getAllStudents,
   saveStudent,
   initializeDatabaseIfEmpty,
   logAuditEvent
 } from './firestoreService';
-import { consumeGoogleRedirect, startGoogleRedirect, type GoogleProfile } from './googleAuth';
 
 export interface AppUser {
   uid: string;
@@ -24,6 +23,7 @@ interface AuthContextType {
   loading: boolean;
   isAuthorized: boolean;
   signInWithGoogle: () => Promise<void>;
+  signInStudent: (fullName: string, accessCode: string) => Promise<void>;
   signInTeacher: (password: string) => Promise<void>;
   signOut: () => Promise<void>;
   switchRoleForTesting: (role: UserRole) => void;
@@ -32,8 +32,18 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const TEACHER_SESSION = 'historykaz-teacher';
-const STUDENT_SESSION = 'historykaz-google-user';
+const STUDENT_SESSION = 'historykaz-student-user';
 const TEACHER_PASSWORD = 'Akylbek8080@#$';
+export const STUDENT_ACCESS_CODE = 'Student2026';
+
+function slugId(name: string): string {
+  const s = name
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-zа-яәіңғүұқөһ0-9-]/gi, '');
+  return ('ST-' + s).slice(0, 40);
+}
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
@@ -67,62 +77,62 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem(STUDENT_SESSION);
   };
 
-  const registerGoogleStudent = async (user: AppUser) => {
-    const email = user.email.toLowerCase().trim();
-    let student = await getStudentByEmail(email);
+  const applyStudent = async (fullName: string) => {
+    const name = fullName.trim().replace(/\s+/g, ' ');
+    const id = slugId(name);
+    const all = await getAllStudents();
+    let student = all.find(
+      (s) => s.fullName.trim().toLowerCase() === name.toLowerCase() || s.studentId === id
+    );
     if (!student) {
       student = {
-        id: 'ST-' + user.uid.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10),
-        studentId: 'ST-' + user.uid.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10),
-        fullName: user.displayName || email.split('@')[0],
-        googleEmail: email,
+        id,
+        studentId: id,
+        fullName: name,
+        googleEmail: '',
         group: '',
         status: 'Active',
         createdAt: new Date().toISOString()
       };
       await saveStudent(student);
     }
+    const user: AppUser = {
+      uid: student.studentId,
+      email: student.googleEmail || '',
+      displayName: student.fullName,
+      photoURL: null
+    };
     setCurrentUser(user);
     setUserRole('STUDENT');
     setCurrentStudent(student);
     setStudentStatus('Active');
     setUserProfile({
       uid: user.uid,
-      email,
-      displayName: user.displayName,
-      photoURL: user.photoURL || undefined,
+      email: user.email,
+      displayName: student.fullName,
       role: 'STUDENT',
       studentId: student.studentId,
-      group: student.group,
       createdAt: student.createdAt,
       lastLoginAt: new Date().toISOString()
     });
-    localStorage.setItem(STUDENT_SESSION, JSON.stringify(user));
+    localStorage.setItem(STUDENT_SESSION, JSON.stringify({ fullName: student.fullName }));
     localStorage.removeItem(TEACHER_SESSION);
-    logAuditEvent('GOOGLE_LOGIN', email, 'STUDENT', 'Google арқылы кіру');
+    logAuditEvent('STUDENT_LOGIN', student.fullName, 'STUDENT', 'Ортақ доступпен кіру');
   };
 
   useEffect(() => {
     const boot = async () => {
       await initializeDatabaseIfEmpty().catch(console.warn);
-
-      const fromRedirect = consumeGoogleRedirect();
-      if (fromRedirect) {
-        await registerGoogleStudent(fromRedirect);
-        setLoading(false);
-        return;
-      }
-
       if (localStorage.getItem(TEACHER_SESSION) === '1') {
         applyTeacher();
         setLoading(false);
         return;
       }
-
       try {
         const saved = localStorage.getItem(STUDENT_SESSION);
         if (saved) {
-          await registerGoogleStudent(JSON.parse(saved) as GoogleProfile);
+          const parsed = JSON.parse(saved);
+          if (parsed.fullName) await applyStudent(parsed.fullName);
         }
       } catch {
         localStorage.removeItem(STUDENT_SESSION);
@@ -133,7 +143,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signInWithGoogle = async () => {
-    startGoogleRedirect();
+    throw new Error('Google кіру өшірілген. Ортақ доступты пайдаланыңыз.');
+  };
+
+  const signInStudent = async (fullName: string, accessCode: string) => {
+    if (accessCode.trim() !== STUDENT_ACCESS_CODE) {
+      throw new Error('Қате доступ');
+    }
+    if (fullName.trim().length < 3) {
+      throw new Error('Аты-жөніңізді толық жазыңыз');
+    }
+    await applyStudent(fullName);
   };
 
   const signInTeacher = async (password: string) => {
@@ -157,9 +177,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const switchRoleForTesting = (_role: UserRole) => {};
 
   const refreshStudentData = async () => {
-    if (currentUser && userRole === 'STUDENT') {
-      await registerGoogleStudent(currentUser);
-    }
+    if (currentStudent?.fullName) await applyStudent(currentStudent.fullName);
   };
 
   const isAuthorized = !!currentUser && (userRole === 'TEACHER' || studentStatus === 'Active');
@@ -175,6 +193,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loading,
         isAuthorized,
         signInWithGoogle,
+        signInStudent,
         signInTeacher,
         signOut,
         switchRoleForTesting,

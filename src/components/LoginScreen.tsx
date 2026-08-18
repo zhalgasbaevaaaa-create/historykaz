@@ -3,33 +3,34 @@ import {
   GraduationCap,
   ShieldCheck,
   QrCode,
-  Calendar,
   Loader2,
   CheckCircle2,
   BookOpen,
-  Lock
+  Lock,
+  User
 } from 'lucide-react';
-import { useAuth } from '../firebase/authContext';
-import { getGoogleClientId, setGoogleClientId, redirectUri } from '../firebase/googleAuth';
+import { useAuth, STUDENT_ACCESS_CODE } from '../firebase/authContext';
 import { InstallPwaPrompt } from './InstallPwaPrompt';
 
 export const LoginScreen: React.FC = () => {
-  const { signInWithGoogle, signInTeacher } = useAuth();
+  const { signInStudent, signInTeacher } = useAuth();
   const [signingIn, setSigningIn] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
   const [showTeacher, setShowTeacher] = useState(false);
+  const [showStudent, setShowStudent] = useState(true);
   const [teacherPassword, setTeacherPassword] = useState('');
-  const [clientId, setClientId] = useState(getGoogleClientId());
-  const [showSetup, setShowSetup] = useState(false);
+  const [fullName, setFullName] = useState('');
+  const [accessCode, setAccessCode] = useState('');
 
-  const handleGoogle = async () => {
+  const handleStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
     setSigningIn('STUDENT');
     setAuthError(null);
     try {
-      if (clientId.trim()) setGoogleClientId(clientId.trim());
-      await signInWithGoogle();
-    } catch {
-      setAuthError('Google кіру басталмады. Төмендегі Client ID баптауын тексеріңіз.');
+      await signInStudent(fullName, accessCode);
+    } catch (err: any) {
+      setAuthError(err?.message || 'Кіру қатесі');
+    } finally {
       setSigningIn(null);
     }
   };
@@ -75,18 +76,12 @@ export const LoginScreen: React.FC = () => {
             Сабаққа қатысуды QR арқылы тіркеу
           </h2>
           <p className="text-xs sm:text-sm text-slate-300 mt-2.5 leading-relaxed">
-            Студент өз Google аккаунтымен кіреді.
+            Барлық студенттер бір ортақ доступпен кіреді. Өз аты-жөніңізді жазыңыз.
           </p>
 
-          <div className="my-6 grid grid-cols-2 gap-2.5 text-left">
-            <div className="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-3 flex items-start gap-2.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-              <div className="text-[11px] text-slate-300 font-medium">Google арқылы тіркелу</div>
-            </div>
-            <div className="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-3 flex items-start gap-2.5">
-              <Calendar className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
-              <div className="text-[11px] text-slate-300 font-medium">Google күнтізбе</div>
-            </div>
+          <div className="my-5 bg-sky-950/50 border border-sky-800 rounded-2xl p-3 text-left">
+            <div className="text-[11px] text-sky-300 font-semibold">Студенттерге ортақ доступ:</div>
+            <div className="text-lg font-extrabold text-white tracking-wide font-mono mt-0.5">{STUDENT_ACCESS_CODE}</div>
           </div>
 
           {authError && (
@@ -96,71 +91,48 @@ export const LoginScreen: React.FC = () => {
           )}
 
           <div className="space-y-2.5">
-            <button
-              id="google-signin-btn"
-              onClick={handleGoogle}
-              disabled={!!signingIn}
-              className="w-full bg-white hover:bg-slate-100 text-slate-900 font-extrabold py-3.5 px-6 rounded-2xl shadow-xl flex items-center justify-center gap-3 text-sm transition active:scale-95 disabled:opacity-50"
-            >
-              {signingIn === 'STUDENT' ? (
-                <Loader2 className="w-5 h-5 animate-spin text-sky-600" />
-              ) : (
-                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17Z" />
-                  <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24Z" />
-                  <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15Z" />
-                  <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98Z" />
-                </svg>
-              )}
-              <span>Google арқылы кіру (студент)</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setShowSetup((v) => !v)}
-              className="text-[11px] text-sky-400 hover:underline"
-            >
-              Google кірмей жатыр ма? Осы жерді ашыңыз
-            </button>
-
-            {showSetup && (
-              <div className="text-left text-[11px] text-slate-300 bg-slate-950 border border-slate-800 rounded-2xl p-3 space-y-2">
-                <p className="font-bold text-amber-300">Неге кірмейді?</p>
-                <p>
-                  Сайт GitHub Pages-та. Ескі Firebase жобасы тек AI Studio домендерін біледі,
-                  сондықтан Google <b>redirect_uri_mismatch</b> қатесін береді.
-                </p>
-                <p className="font-bold text-white">Бір рет жасаңыз (өз Gmail-іңізбен):</p>
-                <ol className="list-decimal pl-4 space-y-1">
-                  <li>
-                    <a className="text-sky-400 underline" href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noreferrer">
-                      Google Cloud → Credentials
-                    </a>
-                  </li>
-                  <li>Create credentials → OAuth client ID → Web application</li>
-                  <li>
-                    Authorized JavaScript origins:<br />
-                    <code className="text-sky-300">https://zhalgasbaevaaaa-create.github.io</code>
-                  </li>
-                  <li>
-                    Authorized redirect URIs:<br />
-                    <code className="text-sky-300 break-all">{typeof window !== 'undefined' ? redirectUri() : 'https://zhalgasbaevaaaa-create.github.io/historykaz/'}</code>
-                  </li>
-                  <li>Client ID-ді төменге қойып, қайта кіріңіз</li>
-                </ol>
+            {showStudent && (
+              <form onSubmit={handleStudent} className="bg-slate-950/80 border border-sky-800/40 rounded-2xl p-3 space-y-2.5 text-left">
+                <label className="text-xs text-sky-300 font-semibold flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5" />
+                  Аты-жөніңіз
+                </label>
                 <input
-                  value={clientId}
-                  onChange={(e) => setClientId(e.target.value)}
-                  placeholder="xxxx.apps.googleusercontent.com"
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Мысалы: Ахметов Айбек"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white"
+                  required
                 />
-              </div>
+                <label className="text-xs text-sky-300 font-semibold flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5" />
+                  Ортақ доступ
+                </label>
+                <input
+                  value={accessCode}
+                  onChange={(e) => setAccessCode(e.target.value)}
+                  placeholder={STUDENT_ACCESS_CODE}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white"
+                  required
+                />
+                <button
+                  type="submit"
+                  disabled={!!signingIn}
+                  className="w-full bg-white hover:bg-slate-100 text-slate-900 font-extrabold py-3 rounded-xl flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+                >
+                  {signingIn === 'STUDENT' ? <Loader2 className="w-4 h-4 animate-spin text-sky-600" /> : <CheckCircle2 className="w-4 h-4 text-sky-600" />}
+                  <span>Студент ретінде кіру</span>
+                </button>
+              </form>
             )}
 
             {!showTeacher ? (
               <button
                 type="button"
-                onClick={() => setShowTeacher(true)}
+                onClick={() => {
+                  setShowTeacher(true);
+                  setShowStudent(false);
+                }}
                 className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-3.5 px-6 rounded-2xl shadow-xl flex items-center justify-center gap-3 text-sm transition"
               >
                 <BookOpen className="w-5 h-5" />
@@ -186,6 +158,16 @@ export const LoginScreen: React.FC = () => {
                 >
                   {signingIn === 'TEACHER' ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                   <span>Кіру</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowTeacher(false);
+                    setShowStudent(true);
+                  }}
+                  className="w-full text-xs text-slate-400"
+                >
+                  Студент кіруіне оралу
                 </button>
               </form>
             )}
