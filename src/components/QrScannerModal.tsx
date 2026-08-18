@@ -196,6 +196,20 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
 
       const { saveAttendanceRecord } = await import('../firebase/firestoreService');
       await saveAttendanceRecord(attendanceRecord);
+      try {
+        const { pushAttendanceToSheet } = await import('../utils/sheetsSync');
+        await pushAttendanceToSheet({
+          studentName: attendanceRecord.studentName,
+          group: attendanceRecord.group || 'HC-2026-2027',
+          date: attendanceRecord.date,
+          time: attendanceRecord.time,
+          subject: attendanceRecord.subject,
+          status: 'Қатысты',
+          timestamp: attendanceRecord.timestamp
+        });
+      } catch {
+        /* webhook may be missing; local record still saved */
+      }
       markQrScan();
       onSuccess(attendanceRecord);
     } catch (error: any) {

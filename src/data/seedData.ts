@@ -2,7 +2,7 @@ import { Student, Teacher, AcademicGroup, Subject, Lesson, SystemSettings } from
 
 export const INITIAL_SETTINGS: SystemSettings = {
   appName: 'Студенттік қатысу жүйесі',
-  googleSpreadsheetId: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
+  googleSpreadsheetId: '1Gpyy1fjJJzycEJAYk0CT9p6UnAHL3MiujmnMX8VFOeQ',
   additionalAssignmentUrl: 'https://t.me/sayasattanu_bot',
   qrValiditySeconds: 900, // 15 minutes
   allowAutoSheetSync: true,
