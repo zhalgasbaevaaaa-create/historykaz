@@ -1,0 +1,6 @@
+{
+  "name": "Student Attendance PWA",
+  "description": "Mobile-first Kazakh student attendance Progressive Web App with Google Sign-In, 15-minute dynamic QR code verification, role-based dashboard, and Google Sheets synchronization.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

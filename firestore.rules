@@ -1,0 +1,95 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function isSuperAdmin() {
+      return isAuthenticated() && (
+        getUserData().role == 'SUPER_ADMIN' ||
+        request.auth.token.email == 'akonyaalex@gmail.com'
+      );
+    }
+    
+    function isTeacher() {
+      return isAuthenticated() && (
+        getUserData().role == 'TEACHER' ||
+        isSuperAdmin()
+      );
+    }
+
+    // System settings - anyone authenticated can read, admins can write
+    match /system_settings/{docId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (request.auth.uid == userId || isSuperAdmin());
+    }
+
+    // Students list
+    match /students/{studentId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin();
+    }
+
+    // Teachers list
+    match /teachers/{teacherId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin();
+    }
+
+    // Groups & Subjects
+    match /groups/{groupId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin();
+    }
+
+    match /subjects/{subjectId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin();
+    }
+
+    // Lessons / Schedule
+    match /lessons/{lessonId} {
+      allow read: if isAuthenticated();
+      allow write: if isTeacher() || isSuperAdmin();
+    }
+
+    // QR Sessions
+    match /qr_sessions/{sessionId} {
+      allow read: if isAuthenticated();
+      allow write: if isTeacher() || isSuperAdmin();
+    }
+
+    // Attendance records
+    match /attendance_records/{recordId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isSuperAdmin();
+    }
+
+    // Messages
+    match /messages/{messageId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isTeacher() || isSuperAdmin();
+    }
+
+    // Audit logs
+    match /audit_logs/{logId} {
+      allow read: if isSuperAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+  }
+}

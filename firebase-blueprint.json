@@ -1,0 +1,141 @@
+{
+  "entities": {
+    "users": {
+      "title": "Users",
+      "description": "User accounts with system roles",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["SUPER_ADMIN", "TEACHER", "STUDENT"] },
+        "studentId": { "type": "string" },
+        "teacherId": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "lastLoginAt": { "type": "string" }
+      },
+      "required": ["email", "role"]
+    },
+    "students": {
+      "title": "Students",
+      "description": "Authorized student roster",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "fullName": { "type": "string" },
+        "googleEmail": { "type": "string" },
+        "group": { "type": "string" },
+        "status": { "type": "string", "enum": ["Active", "Inactive", "Blocked"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["studentId", "fullName", "googleEmail", "group", "status"]
+    },
+    "teachers": {
+      "title": "Teachers",
+      "description": "Faculty members",
+      "type": "object",
+      "properties": {
+        "teacherId": { "type": "string" },
+        "fullName": { "type": "string" },
+        "email": { "type": "string" },
+        "department": { "type": "string" },
+        "status": { "type": "string", "enum": ["Active", "Inactive"] }
+      },
+      "required": ["teacherId", "fullName", "email", "status"]
+    },
+    "lessons": {
+      "title": "Lessons",
+      "description": "Scheduled lessons and time slots",
+      "type": "object",
+      "properties": {
+        "lessonId": { "type": "string" },
+        "date": { "type": "string" },
+        "startTime": { "type": "string" },
+        "endTime": { "type": "string" },
+        "subject": { "type": "string" },
+        "teacherId": { "type": "string" },
+        "teacherName": { "type": "string" },
+        "classroom": { "type": "string" },
+        "group": { "type": "string" },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["lessonId", "date", "startTime", "endTime", "subject", "teacherName", "classroom", "group"]
+    },
+    "qr_sessions": {
+      "title": "QR Sessions",
+      "description": "15-minute temporary attendance sessions",
+      "type": "object",
+      "properties": {
+        "sessionId": { "type": "string" },
+        "lessonId": { "type": "string" },
+        "teacherId": { "type": "string" },
+        "token": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "expiresAt": { "type": "number" },
+        "status": { "type": "string", "enum": ["Active", "Expired", "Invalidated"] }
+      },
+      "required": ["sessionId", "lessonId", "token", "createdAt", "expiresAt", "status"]
+    },
+    "attendance_records": {
+      "title": "Attendance Records",
+      "description": "Immutable attendance submissions",
+      "type": "object",
+      "properties": {
+        "lessonId": { "type": "string" },
+        "sessionId": { "type": "string" },
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "studentEmail": { "type": "string" },
+        "group": { "type": "string" },
+        "subject": { "type": "string" },
+        "teacherName": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "timestamp": { "type": "number" },
+        "status": { "type": "string" },
+        "sheetsSyncStatus": { "type": "string" }
+      },
+      "required": ["lessonId", "sessionId", "studentId", "studentEmail", "status", "timestamp"]
+    },
+    "messages": {
+      "title": "Messages",
+      "description": "Student to teacher messages",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "studentEmail": { "type": "string" },
+        "group": { "type": "string" },
+        "teacherId": { "type": "string" },
+        "teacherName": { "type": "string" },
+        "subject": { "type": "string" },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["studentId", "studentEmail", "teacherId", "message"]
+    },
+    "system_settings": {
+      "title": "System Settings",
+      "description": "Global application configuration",
+      "type": "object",
+      "properties": {
+        "appName": { "type": "string" },
+        "googleSpreadsheetId": { "type": "string" },
+        "additionalAssignmentUrl": { "type": "string" },
+        "qrValiditySeconds": { "type": "number" }
+      }
+    },
+    "audit_logs": {
+      "title": "Audit Logs",
+      "description": "Security and activity logs",
+      "type": "object",
+      "properties": {
+        "action": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "role": { "type": "string" },
+        "details": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["action", "timestamp"]
+    }
+  }
+}

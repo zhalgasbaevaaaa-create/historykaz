@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="grad512" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#grad512)" />
+  <!-- Graduation Cap -->
+  <path d="M256 110 L400 185 L256 260 L112 185 Z" fill="#38bdf8" />
+  <path d="M360 225 V320 C360 360 256 395 256 395 C256 395 152 360 152 320 V225 L256 280 Z" fill="#0284c7" opacity="0.9" />
+  <path d="M400 185 V305" stroke="#facc15" stroke-width="10" stroke-linecap="round" />
+  <circle cx="400" cy="315" r="10" fill="#facc15" />
+  <!-- Attendance Stamp Checkmark Badge -->
+  <circle cx="256" cy="320" r="56" fill="#10b981" />
+  <path d="M236 320 L250 334 L278 306" stroke="#ffffff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+</svg>

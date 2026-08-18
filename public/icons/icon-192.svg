@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="36" fill="url(#grad)" />
+  <!-- Graduation Cap & QR Scan Symbol -->
+  <path d="M96 42 L150 70 L96 98 L42 70 Z" fill="#38bdf8" />
+  <path d="M136 85 V120 C136 136 96 148 96 148 C96 148 56 136 56 120 V85 L96 106 Z" fill="#0284c7" opacity="0.9" />
+  <path d="M150 70 V115" stroke="#facc15" stroke-width="4" stroke-linecap="round" />
+  <circle cx="150" cy="118" r="4" fill="#facc15" />
+  <!-- Checkmark -->
+  <circle cx="96" cy="120" r="22" fill="#10b981" />
+  <path d="M88 120 L94 126 L106 114" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+</svg>
