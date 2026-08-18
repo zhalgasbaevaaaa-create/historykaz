@@ -10,6 +10,7 @@ import {
   Lock
 } from 'lucide-react';
 import { useAuth } from '../firebase/authContext';
+import { getGoogleClientId, setGoogleClientId, redirectUri } from '../firebase/googleAuth';
 import { InstallPwaPrompt } from './InstallPwaPrompt';
 
 export const LoginScreen: React.FC = () => {
@@ -18,21 +19,17 @@ export const LoginScreen: React.FC = () => {
   const [authError, setAuthError] = useState<string | null>(null);
   const [showTeacher, setShowTeacher] = useState(false);
   const [teacherPassword, setTeacherPassword] = useState('');
+  const [clientId, setClientId] = useState(getGoogleClientId());
+  const [showSetup, setShowSetup] = useState(false);
 
   const handleGoogle = async () => {
     setSigningIn('STUDENT');
     setAuthError(null);
     try {
+      if (clientId.trim()) setGoogleClientId(clientId.trim());
       await signInWithGoogle();
-    } catch (err: any) {
-      if (err?.code !== 'auth/popup-closed-by-user') {
-        const msg =
-          err?.code === 'auth/unauthorized-domain'
-            ? 'Google кіру үшін доменді Firebase-ке қосыңыз (zhalgasbaevaaaa-create.github.io).'
-            : 'Google арқылы кіру кезінде ақау пайда болды. Қайта көріңіз.';
-        setAuthError(msg);
-      }
-    } finally {
+    } catch {
+      setAuthError('Google кіру басталмады. Төмендегі Client ID баптауын тексеріңіз.');
       setSigningIn(null);
     }
   };
@@ -55,7 +52,7 @@ export const LoginScreen: React.FC = () => {
       <div className="absolute top-10 left-1/2 -translate-x-1/2 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="max-w-md mx-auto w-full pt-4 flex items-center justify-between z-10">
         <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center text-white shadow-lg shadow-sky-500/25">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center text-white shadow-lg">
             <GraduationCap className="w-6 h-6" />
           </div>
           <div>
@@ -71,14 +68,14 @@ export const LoginScreen: React.FC = () => {
 
       <div className="max-w-md mx-auto w-full my-auto py-8 z-10">
         <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl text-center">
-          <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-700 flex items-center justify-center text-white shadow-xl shadow-sky-600/30 mb-6">
+          <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-700 flex items-center justify-center text-white shadow-xl mb-6">
             <QrCode className="w-10 h-10 stroke-[2.2]" />
           </div>
           <h2 className="text-2xl font-extrabold text-white tracking-tight leading-tight">
             Сабаққа қатысуды QR арқылы тіркеу
           </h2>
           <p className="text-xs sm:text-sm text-slate-300 mt-2.5 leading-relaxed">
-            Студент өз Google аккаунтымен кіреді. Оқытушы құпиясөзбен кіреді.
+            Студент өз Google аккаунтымен кіреді.
           </p>
 
           <div className="my-6 grid grid-cols-2 gap-2.5 text-left">
@@ -118,11 +115,53 @@ export const LoginScreen: React.FC = () => {
               <span>Google арқылы кіру (студент)</span>
             </button>
 
+            <button
+              type="button"
+              onClick={() => setShowSetup((v) => !v)}
+              className="text-[11px] text-sky-400 hover:underline"
+            >
+              Google кірмей жатыр ма? Осы жерді ашыңыз
+            </button>
+
+            {showSetup && (
+              <div className="text-left text-[11px] text-slate-300 bg-slate-950 border border-slate-800 rounded-2xl p-3 space-y-2">
+                <p className="font-bold text-amber-300">Неге кірмейді?</p>
+                <p>
+                  Сайт GitHub Pages-та. Ескі Firebase жобасы тек AI Studio домендерін біледі,
+                  сондықтан Google <b>redirect_uri_mismatch</b> қатесін береді.
+                </p>
+                <p className="font-bold text-white">Бір рет жасаңыз (өз Gmail-іңізбен):</p>
+                <ol className="list-decimal pl-4 space-y-1">
+                  <li>
+                    <a className="text-sky-400 underline" href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noreferrer">
+                      Google Cloud → Credentials
+                    </a>
+                  </li>
+                  <li>Create credentials → OAuth client ID → Web application</li>
+                  <li>
+                    Authorized JavaScript origins:<br />
+                    <code className="text-sky-300">https://zhalgasbaevaaaa-create.github.io</code>
+                  </li>
+                  <li>
+                    Authorized redirect URIs:<br />
+                    <code className="text-sky-300 break-all">{typeof window !== 'undefined' ? redirectUri() : 'https://zhalgasbaevaaaa-create.github.io/historykaz/'}</code>
+                  </li>
+                  <li>Client ID-ді төменге қойып, қайта кіріңіз</li>
+                </ol>
+                <input
+                  value={clientId}
+                  onChange={(e) => setClientId(e.target.value)}
+                  placeholder="xxxx.apps.googleusercontent.com"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                />
+              </div>
+            )}
+
             {!showTeacher ? (
               <button
                 type="button"
                 onClick={() => setShowTeacher(true)}
-                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-3.5 px-6 rounded-2xl shadow-xl flex items-center justify-center gap-3 text-sm transition active:scale-95"
+                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-3.5 px-6 rounded-2xl shadow-xl flex items-center justify-center gap-3 text-sm transition"
               >
                 <BookOpen className="w-5 h-5" />
                 <span>Оқытушы ретінде кіру</span>
@@ -137,8 +176,7 @@ export const LoginScreen: React.FC = () => {
                   type="password"
                   value={teacherPassword}
                   onChange={(e) => setTeacherPassword(e.target.value)}
-                  placeholder="Құпиясөзді енгізіңіз"
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white"
                   autoFocus
                 />
                 <button

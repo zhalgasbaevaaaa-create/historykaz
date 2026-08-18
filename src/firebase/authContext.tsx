@@ -1,11 +1,4 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import {
-  User,
-  signInWithPopup,
-  signOut as firebaseSignOut,
-  onAuthStateChanged
-} from 'firebase/auth';
-import { auth, googleProvider } from './config';
 import { UserProfile, Student, UserRole, StudentStatus } from '../types';
 import {
   getStudentByEmail,
@@ -13,6 +6,7 @@ import {
   initializeDatabaseIfEmpty,
   logAuditEvent
 } from './firestoreService';
+import { consumeGoogleRedirect, startGoogleRedirect, type GoogleProfile } from './googleAuth';
 
 export interface AppUser {
   uid: string;
@@ -38,16 +32,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const TEACHER_SESSION = 'historykaz-teacher';
+const STUDENT_SESSION = 'historykaz-google-user';
 const TEACHER_PASSWORD = 'Akylbek8080@#$';
-
-function toAppUser(user: User): AppUser {
-  return {
-    uid: user.uid,
-    email: user.email || '',
-    displayName: user.displayName || 'Студент',
-    photoURL: user.photoURL
-  };
-}
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
@@ -78,6 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       lastLoginAt: new Date().toISOString()
     });
     localStorage.setItem(TEACHER_SESSION, '1');
+    localStorage.removeItem(STUDENT_SESSION);
   };
 
   const registerGoogleStudent = async (user: AppUser) => {
@@ -85,8 +72,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let student = await getStudentByEmail(email);
     if (!student) {
       student = {
-        id: 'ST-' + user.uid.slice(0, 8),
-        studentId: 'ST-' + user.uid.slice(0, 8),
+        id: 'ST-' + user.uid.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10),
+        studentId: 'ST-' + user.uid.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10),
         fullName: user.displayName || email.split('@')[0],
         googleEmail: email,
         group: '',
@@ -110,48 +97,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createdAt: student.createdAt,
       lastLoginAt: new Date().toISOString()
     });
+    localStorage.setItem(STUDENT_SESSION, JSON.stringify(user));
+    localStorage.removeItem(TEACHER_SESSION);
     logAuditEvent('GOOGLE_LOGIN', email, 'STUDENT', 'Google арқылы кіру');
   };
 
   useEffect(() => {
-    initializeDatabaseIfEmpty().catch(console.warn);
+    const boot = async () => {
+      await initializeDatabaseIfEmpty().catch(console.warn);
 
-    if (localStorage.getItem(TEACHER_SESSION) === '1') {
-      applyTeacher();
-      setLoading(false);
-      return;
-    }
+      const fromRedirect = consumeGoogleRedirect();
+      if (fromRedirect) {
+        await registerGoogleStudent(fromRedirect);
+        setLoading(false);
+        return;
+      }
 
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user && user.email) {
-        await registerGoogleStudent(toAppUser(user));
-      } else {
-        setCurrentUser(null);
-        setUserProfile(null);
-        setCurrentStudent(null);
-        setStudentStatus('Unknown');
-        setUserRole('STUDENT');
+      if (localStorage.getItem(TEACHER_SESSION) === '1') {
+        applyTeacher();
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const saved = localStorage.getItem(STUDENT_SESSION);
+        if (saved) {
+          await registerGoogleStudent(JSON.parse(saved) as GoogleProfile);
+        }
+      } catch {
+        localStorage.removeItem(STUDENT_SESSION);
       }
       setLoading(false);
-    });
-
-    return () => unsubscribe();
+    };
+    boot();
   }, []);
 
   const signInWithGoogle = async () => {
-    setLoading(true);
-    localStorage.removeItem(TEACHER_SESSION);
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      if (result.user) {
-        await registerGoogleStudent(toAppUser(result.user));
-      }
-    } catch (error: any) {
-      console.error('Google Sign-In error:', error);
-      setLoading(false);
-      throw error;
-    }
-    setLoading(false);
+    startGoogleRedirect();
   };
 
   const signInTeacher = async (password: string) => {
@@ -164,11 +146,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     localStorage.removeItem(TEACHER_SESSION);
-    try {
-      await firebaseSignOut(auth);
-    } catch {
-      /* ignore */
-    }
+    localStorage.removeItem(STUDENT_SESSION);
     setCurrentUser(null);
     setUserProfile(null);
     setCurrentStudent(null);
