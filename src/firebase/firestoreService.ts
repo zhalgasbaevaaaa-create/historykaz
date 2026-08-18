@@ -1,21 +1,4 @@
 import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  setDoc,
-  updateDoc,
-  deleteDoc,
-  query,
-  where,
-  orderBy,
-  onSnapshot,
-  serverTimestamp,
-  writeBatch,
-  Unsubscribe
-} from 'firebase/firestore';
-import { db } from './config';
-import {
   Student,
   Teacher,
   AcademicGroup,
@@ -25,350 +8,259 @@ import {
   AttendanceRecord,
   StudentMessage,
   SystemSettings,
-  AuditLog,
-  UserProfile
+  AuditLog
 } from '../types';
-import {
-  INITIAL_SETTINGS,
-  INITIAL_STUDENTS,
-  INITIAL_TEACHERS,
-  INITIAL_GROUPS,
-  INITIAL_SUBJECTS,
-  INITIAL_LESSONS
-} from '../data/seedData';
-import { formatKazakhDateShort, formatKazakhTime } from '../utils/kazakhDate';
+import { loadDb, mutateDb } from './localDb';
 
-// Initialize default collections if database is fresh
 export async function initializeDatabaseIfEmpty(): Promise<void> {
-  try {
-    const settingsDoc = await getDoc(doc(db, 'system_settings', 'general'));
-    if (!settingsDoc.exists()) {
-      console.log('Bootstrapping initial database schema and seed records...');
-      const batch = writeBatch(db);
-
-      // 1. Settings
-      batch.set(doc(db, 'system_settings', 'general'), INITIAL_SETTINGS);
-
-      // 2. Groups
-      INITIAL_GROUPS.forEach((g) => {
-        batch.set(doc(db, 'groups', g.id), g);
-      });
-
-      // 3. Subjects
-      INITIAL_SUBJECTS.forEach((s) => {
-        batch.set(doc(db, 'subjects', s.id), s);
-      });
-
-      // 4. Teachers
-      INITIAL_TEACHERS.forEach((t) => {
-        batch.set(doc(db, 'teachers', t.id), t);
-      });
-
-      // 5. Students
-      INITIAL_STUDENTS.forEach((st) => {
-        batch.set(doc(db, 'students', st.studentId), st);
-      });
-
-      // 6. Lessons
-      INITIAL_LESSONS.forEach((l) => {
-        batch.set(doc(db, 'lessons', l.id), l);
-      });
-
-      await batch.commit();
-      console.log('Database bootstrap successfully finished!');
-    }
-  } catch (error) {
-    console.warn('Database initialization note:', error);
-  }
+  loadDb();
 }
 
-// ----------------------------------------------------
-// System Settings
-// ----------------------------------------------------
 export async function getSystemSettings(): Promise<SystemSettings> {
-  try {
-    const docSnap = await getDoc(doc(db, 'system_settings', 'general'));
-    if (docSnap.exists()) {
-      return docSnap.data() as SystemSettings;
-    }
-  } catch (e) {
-    console.error('Error fetching settings:', e);
-  }
-  return INITIAL_SETTINGS;
+  return loadDb().settings;
 }
 
 export async function updateSystemSettings(settings: Partial<SystemSettings>): Promise<void> {
-  await setDoc(doc(db, 'system_settings', 'general'), settings, { merge: true });
+  mutateDb((db) => {
+    db.settings = { ...db.settings, ...settings };
+  });
 }
 
-// ----------------------------------------------------
-// Students
-// ----------------------------------------------------
 export async function getStudentByEmail(email: string): Promise<Student | null> {
-  try {
-    const normalizedEmail = email.trim().toLowerCase();
-    const q = query(collection(db, 'students'), where('googleEmail', '==', normalizedEmail));
-    const snap = await getDocs(q);
-    if (!snap.empty) {
-      const docData = snap.docs[0].data() as Student;
-      return { ...docData, id: snap.docs[0].id };
-    }
-  } catch (e) {
-    console.error('Error finding student by email:', e);
-  }
-  return null;
+  const normalized = email.trim().toLowerCase();
+  return loadDb().students.find((s) => s.googleEmail.toLowerCase() === normalized) || null;
 }
 
 export async function getAllStudents(): Promise<Student[]> {
-  const snap = await getDocs(collection(db, 'students'));
-  return snap.docs.map((d) => ({ ...d.data(), id: d.id } as Student));
+  return loadDb().students;
 }
 
 export async function saveStudent(student: Student): Promise<void> {
-  await setDoc(doc(db, 'students', student.studentId), student, { merge: true });
+  mutateDb((db) => {
+    const i = db.students.findIndex((s) => s.studentId === student.studentId);
+    if (i >= 0) db.students[i] = student;
+    else db.students.push(student);
+  });
 }
 
 export async function deleteStudent(studentId: string): Promise<void> {
-  await deleteDoc(doc(db, 'students', studentId));
+  mutateDb((db) => {
+    db.students = db.students.filter((s) => s.studentId !== studentId);
+  });
 }
 
-// ----------------------------------------------------
-// Teachers
-// ----------------------------------------------------
 export async function getAllTeachers(): Promise<Teacher[]> {
-  const snap = await getDocs(collection(db, 'teachers'));
-  return snap.docs.map((d) => ({ ...d.data(), id: d.id } as Teacher));
+  return loadDb().teachers;
 }
 
 export async function saveTeacher(teacher: Teacher): Promise<void> {
-  await setDoc(doc(db, 'teachers', teacher.id), teacher, { merge: true });
+  mutateDb((db) => {
+    const i = db.teachers.findIndex((t) => t.id === teacher.id);
+    if (i >= 0) db.teachers[i] = teacher;
+    else db.teachers.push(teacher);
+  });
 }
 
 export async function deleteTeacher(teacherId: string): Promise<void> {
-  await deleteDoc(doc(db, 'teachers', teacherId));
+  mutateDb((db) => {
+    db.teachers = db.teachers.filter((t) => t.id !== teacherId);
+  });
 }
 
-// ----------------------------------------------------
-// Groups & Subjects
-// ----------------------------------------------------
 export async function getAllGroups(): Promise<AcademicGroup[]> {
-  const snap = await getDocs(collection(db, 'groups'));
-  return snap.docs.map((d) => ({ ...d.data(), id: d.id } as AcademicGroup));
+  return loadDb().groups;
 }
 
 export async function saveGroup(group: AcademicGroup): Promise<void> {
-  await setDoc(doc(db, 'groups', group.id), group, { merge: true });
+  mutateDb((db) => {
+    const i = db.groups.findIndex((g) => g.id === group.id);
+    if (i >= 0) db.groups[i] = group;
+    else db.groups.push(group);
+  });
 }
 
 export async function deleteGroup(groupId: string): Promise<void> {
-  await deleteDoc(doc(db, 'groups', groupId));
+  mutateDb((db) => {
+    db.groups = db.groups.filter((g) => g.id !== groupId);
+  });
 }
 
 export async function getAllSubjects(): Promise<Subject[]> {
-  const snap = await getDocs(collection(db, 'subjects'));
-  return snap.docs.map((d) => ({ ...d.data(), id: d.id } as Subject));
+  return loadDb().subjects;
 }
 
 export async function saveSubject(subject: Subject): Promise<void> {
-  await setDoc(doc(db, 'subjects', subject.id), subject, { merge: true });
+  mutateDb((db) => {
+    const i = db.subjects.findIndex((s) => s.id === subject.id);
+    if (i >= 0) db.subjects[i] = subject;
+    else db.subjects.push(subject);
+  });
 }
 
 export async function deleteSubject(subjectId: string): Promise<void> {
-  await deleteDoc(doc(db, 'subjects', subjectId));
+  mutateDb((db) => {
+    db.subjects = db.subjects.filter((s) => s.id !== subjectId);
+  });
 }
 
-// ----------------------------------------------------
-// Lessons / Schedule
-// ----------------------------------------------------
 export async function getAllLessons(): Promise<Lesson[]> {
-  const snap = await getDocs(collection(db, 'lessons'));
-  return snap.docs.map((d) => ({ ...d.data(), id: d.id } as Lesson));
+  return loadDb().lessons;
 }
 
 export async function getLessonsForGroup(groupName: string): Promise<Lesson[]> {
-  const q = query(collection(db, 'lessons'), where('group', '==', groupName));
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ ...d.data(), id: d.id } as Lesson));
+  return loadDb().lessons.filter((l) => l.group === groupName);
 }
 
 export async function saveLesson(lesson: Lesson): Promise<void> {
-  await setDoc(doc(db, 'lessons', lesson.id), lesson, { merge: true });
+  mutateDb((db) => {
+    const i = db.lessons.findIndex((l) => l.id === lesson.id);
+    if (i >= 0) db.lessons[i] = lesson;
+    else db.lessons.push(lesson);
+  });
 }
 
 export async function deleteLesson(lessonId: string): Promise<void> {
-  await deleteDoc(doc(db, 'lessons', lessonId));
+  mutateDb((db) => {
+    db.lessons = db.lessons.filter((l) => l.id !== lessonId);
+  });
 }
 
-// ----------------------------------------------------
-// QR Sessions (15 Minutes Expiration Authority)
-// ----------------------------------------------------
 export async function createQrSession(lesson: Lesson, validitySeconds: number = 900): Promise<QrSession> {
-  const sessionId = 'QRS-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
   const now = Date.now();
-  const expiresAt = now + validitySeconds * 1000;
-  
-  // Cryptographic random token
-  const token = 'TOK_' + Math.random().toString(36).substring(2) + '_' + Date.now().toString(36);
-
-  const qrSession: QrSession = {
-    sessionId,
+  const session: QrSession = {
+    sessionId: 'QRS-' + now + '-' + Math.random().toString(36).slice(2, 9),
     lessonId: lesson.id,
     teacherId: lesson.teacherId,
     teacherName: lesson.teacherName,
     subject: lesson.subject,
     group: lesson.group,
-    token,
+    token: 'TOK_' + Math.random().toString(36).slice(2) + '_' + now.toString(36),
     createdAt: now,
-    expiresAt,
+    expiresAt: now + validitySeconds * 1000,
     status: 'Active',
     totalAttendees: 0
   };
 
-  // Invalidate any previous active sessions for this lesson
-  const existingSnap = await getDocs(
-    query(
-      collection(db, 'qr_sessions'),
-      where('lessonId', '==', lesson.id),
-      where('status', '==', 'Active')
-    )
-  );
-  
-  const batch = writeBatch(db);
-  existingSnap.docs.forEach((docSnap) => {
-    batch.update(doc(db, 'qr_sessions', docSnap.id), { status: 'Invalidated' });
+  mutateDb((db) => {
+    db.qrSessions.forEach((s) => {
+      if (s.lessonId === lesson.id && s.status === 'Active') s.status = 'Invalidated';
+    });
+    db.qrSessions.push(session);
   });
-
-  batch.set(doc(db, 'qr_sessions', sessionId), qrSession);
-  await batch.commit();
-
-  return qrSession;
+  return session;
 }
 
 export async function getActiveQrSessionForLesson(lessonId: string): Promise<QrSession | null> {
-  const q = query(
-    collection(db, 'qr_sessions'),
-    where('lessonId', '==', lessonId),
-    where('status', '==', 'Active')
-  );
-  const snap = await getDocs(q);
-  if (snap.empty) return null;
-
-  const session = snap.docs[0].data() as QrSession;
-  // Check backend server time expiration
+  const db = loadDb();
+  const session = db.qrSessions.find((s) => s.lessonId === lessonId && s.status === 'Active');
+  if (!session) return null;
   if (Date.now() > session.expiresAt) {
-    await updateDoc(doc(db, 'qr_sessions', session.sessionId), { status: 'Expired' });
+    mutateDb((d) => {
+      const s = d.qrSessions.find((x) => x.sessionId === session.sessionId);
+      if (s) s.status = 'Expired';
+    });
     return { ...session, status: 'Expired' };
   }
   return session;
 }
 
 export async function invalidateQrSession(sessionId: string): Promise<void> {
-  await updateDoc(doc(db, 'qr_sessions', sessionId), { status: 'Invalidated' });
+  mutateDb((db) => {
+    const s = db.qrSessions.find((x) => x.sessionId === sessionId);
+    if (s) s.status = 'Invalidated';
+  });
 }
 
-// ----------------------------------------------------
-// Attendance Records
-// ----------------------------------------------------
 export async function getAttendanceByStudent(studentId: string): Promise<AttendanceRecord[]> {
-  const q = query(
-    collection(db, 'attendance_records'),
-    where('studentId', '==', studentId)
-  );
-  const snap = await getDocs(q);
-  const list = snap.docs.map((d) => d.data() as AttendanceRecord);
-  return list.sort((a, b) => b.timestamp - a.timestamp);
+  return loadDb()
+    .attendance.filter((a) => a.studentId === studentId)
+    .sort((a, b) => b.timestamp - a.timestamp);
 }
 
 export function subscribeAttendanceForLesson(
   lessonId: string,
   onUpdate: (records: AttendanceRecord[]) => void
-): Unsubscribe {
-  const q = query(
-    collection(db, 'attendance_records'),
-    where('lessonId', '==', lessonId)
-  );
-  return onSnapshot(q, (snap) => {
-    const records = snap.docs.map((d) => d.data() as AttendanceRecord);
-    records.sort((a, b) => b.timestamp - a.timestamp);
-    onUpdate(records);
-  });
+): () => void {
+  const tick = () => {
+    const list = loadDb()
+      .attendance.filter((a) => a.lessonId === lessonId)
+      .sort((a, b) => b.timestamp - a.timestamp);
+    onUpdate(list);
+  };
+  tick();
+  const id = setInterval(tick, 1500);
+  return () => clearInterval(id);
 }
 
 export async function getAllAttendanceRecords(): Promise<AttendanceRecord[]> {
-  const snap = await getDocs(collection(db, 'attendance_records'));
-  const list = snap.docs.map((d) => d.data() as AttendanceRecord);
-  return list.sort((a, b) => b.timestamp - a.timestamp);
+  return loadDb().attendance.sort((a, b) => b.timestamp - a.timestamp);
 }
 
-// ----------------------------------------------------
-// Student Messages
-// ----------------------------------------------------
-export async function sendStudentMessage(message: Omit<StudentMessage, 'id' | 'createdAt' | 'status'>): Promise<void> {
-  const msgId = 'MSG-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6);
-  const fullMsg: StudentMessage = {
-    ...message,
-    id: msgId,
-    createdAt: new Date().toISOString(),
-    status: 'Sent'
-  };
-  await setDoc(doc(db, 'messages', msgId), fullMsg);
-}
-
-export async function getMessagesForTeacher(teacherId: string): Promise<StudentMessage[]> {
-  const q = query(
-    collection(db, 'messages'),
-    where('teacherId', '==', teacherId)
-  );
-  const snap = await getDocs(q);
-  const list = snap.docs.map((d) => d.data() as StudentMessage);
-  return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-}
-
-export async function getMessagesForStudent(studentId: string): Promise<StudentMessage[]> {
-  const q = query(
-    collection(db, 'messages'),
-    where('studentId', '==', studentId)
-  );
-  const snap = await getDocs(q);
-  const list = snap.docs.map((d) => d.data() as StudentMessage);
-  return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-}
-
-export async function replyToMessage(messageId: string, replyText: string): Promise<void> {
-  await updateDoc(doc(db, 'messages', messageId), {
-    status: 'Replied',
-    replyText,
-    repliedAt: new Date().toISOString()
+export async function saveAttendanceRecord(record: AttendanceRecord): Promise<void> {
+  mutateDb((db) => {
+    const i = db.attendance.findIndex((a) => a.id === record.id);
+    if (i >= 0) db.attendance[i] = record;
+    else db.attendance.push(record);
   });
 }
 
-// ----------------------------------------------------
-// Audit Logging
-// ----------------------------------------------------
+export async function sendStudentMessage(
+  message: Omit<StudentMessage, 'id' | 'createdAt' | 'status'>
+): Promise<void> {
+  const full: StudentMessage = {
+    ...message,
+    id: 'MSG-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+    createdAt: new Date().toISOString(),
+    status: 'Sent'
+  };
+  mutateDb((db) => {
+    db.messages.push(full);
+  });
+}
+
+export async function getMessagesForTeacher(teacherId: string): Promise<StudentMessage[]> {
+  return loadDb()
+    .messages.filter((m) => m.teacherId === teacherId)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export async function getMessagesForStudent(studentId: string): Promise<StudentMessage[]> {
+  return loadDb()
+    .messages.filter((m) => m.studentId === studentId)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export async function replyToMessage(messageId: string, replyText: string): Promise<void> {
+  mutateDb((db) => {
+    const m = db.messages.find((x) => x.id === messageId);
+    if (m) {
+      m.status = 'Replied';
+      m.replyText = replyText;
+      m.repliedAt = new Date().toISOString();
+    }
+  });
+}
+
 export async function logAuditEvent(
   action: string,
   userEmail: string,
   role: string,
   details: string
 ): Promise<void> {
-  try {
-    const logId = 'LOG-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6);
-    const audit: AuditLog = {
-      id: logId,
+  mutateDb((db) => {
+    db.audit.push({
+      id: 'LOG-' + Date.now(),
       action,
       userEmail,
       role,
       details,
       timestamp: new Date().toISOString()
-    };
-    await setDoc(doc(db, 'audit_logs', logId), audit);
-  } catch (e) {
-    console.warn('Audit log write error:', e);
-  }
+    });
+  });
 }
 
 export async function getAuditLogs(): Promise<AuditLog[]> {
-  const snap = await getDocs(collection(db, 'audit_logs'));
-  const list = snap.docs.map((d) => d.data() as AuditLog);
-  return list.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  return loadDb().audit.sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  );
 }

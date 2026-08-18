@@ -143,43 +143,10 @@ export const TeacherDashboard: React.FC = () => {
     try {
       setGenerating(true);
 
-      // Call backend to generate cryptographically authoritative QR
-      const response = await fetch('/api/qr/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          lessonId: lesson.id,
-          teacherId: lesson.teacherId,
-          teacherName: lesson.teacherName,
-          subject: lesson.subject,
-          group: lesson.group,
-          validitySeconds: 900
-        })
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        const newSession: QrSession = {
-          sessionId: data.sessionId,
-          lessonId: lesson.id,
-          teacherId: lesson.teacherId,
-          teacherName: lesson.teacherName,
-          subject: lesson.subject,
-          group: lesson.group,
-          token: JSON.parse(data.qrPayloadString).token,
-          createdAt: data.createdAt,
-          expiresAt: data.expiresAt,
-          status: 'Active',
-          totalAttendees: 0
-        };
-
-        // Store session in Firestore as well
-        await createQrSession(lesson, 900);
-
-        setActiveSession(newSession);
-        setQrPayloadString(data.qrPayloadString);
-        setRemainingSeconds(900);
-      }
+      const newSession = await createQrSession(lesson, 900);
+      setActiveSession(newSession);
+      setQrPayloadString(JSON.stringify(newSession));
+      setRemainingSeconds(900);
     } catch (err) {
       console.error('Error generating QR:', err);
     } finally {
