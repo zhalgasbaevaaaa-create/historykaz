@@ -17,9 +17,9 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
-  const { currentUser, currentStudent, userRole, signOut, switchRoleForTesting } = useAuth();
+  const { currentUser, currentStudent, userRole, signOut } = useAuth();
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
-  const [showRoleMenu, setShowRoleMenu] = useState<boolean>(false);
+  const [now, setNow] = useState(new Date());
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -27,10 +27,12 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+    const t = setInterval(() => setNow(new Date()), 1000);
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      clearInterval(t);
     };
   }, []);
 
@@ -70,7 +72,9 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
             <h1 className="font-extrabold text-sm sm:text-base text-slate-100 leading-tight">
               Студенттік қатысу
             </h1>
-            <p className="text-[11px] text-sky-400 font-medium">PWA Attendance System</p>
+            <p className="text-[11px] text-sky-400 font-medium font-mono">
+              {now.toLocaleDateString('kk-KZ')} • {now.toLocaleTimeString('kk-KZ')}
+            </p>
           </div>
         </div>
 
@@ -92,11 +96,11 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
               </div>
             )}
             <div className="hidden md:block text-left">
-              <div className="text-xs font-bold text-slate-100 max-w-[120px] truncate leading-none">
-                {currentStudent?.fullName?.split(' ')[0] || currentUser?.displayName?.split(' ')[0] || 'Студент'}
+              <div className="text-xs font-bold text-slate-100 max-w-[140px] truncate leading-none">
+                {currentStudent?.fullName || currentUser?.displayName || 'Студент'}
               </div>
               <div className="text-[10px] text-slate-400 font-mono leading-tight mt-0.5">
-                {currentStudent?.group || badge.label}
+                {userRole === 'TEACHER' ? badge.label : 'HC-2026-2027'}
               </div>
             </div>
           </div>

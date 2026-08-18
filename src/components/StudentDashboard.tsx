@@ -21,7 +21,8 @@ import { QrScannerModal } from './QrScannerModal';
 import { AttendanceSuccessModal } from './AttendanceSuccessModal';
 import { AttendanceFailureModal } from './AttendanceFailureModal';
 import { TeacherMessagingModal } from './TeacherMessagingModal';
-import { formatKazakhDayMonth, formatKazakhDate } from '../utils/kazakhDate';
+import { formatKazakhDate } from '../utils/kazakhDate';
+import { isQrBlocked, DOUBLE_MARK_MSG } from '../utils/deviceLock';
 
 interface StudentDashboardProps {
   onNavigateTab: (tab: string) => void;
@@ -32,6 +33,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onNavigateTa
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [recentAttendance, setRecentAttendance] = useState<AttendanceRecord[]>([]);
+  const [now, setNow] = useState(new Date());
 
   // Modals state
   const [showScanner, setShowScanner] = useState<boolean>(false);
@@ -62,6 +64,8 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onNavigateTa
     };
 
     loadStudentData();
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
   }, [currentStudent]);
 
   // Handle Attendance Scanner callbacks
@@ -82,8 +86,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onNavigateTa
   };
 
   const handleOpenAssignments = () => {
-    const url = settings?.additionalAssignmentUrl || 'https://kundelik.kz';
-    window.open(url, '_blank', 'noopener,noreferrer');
+    window.open('https://t.me/sayasattanu_bot', '_blank', 'noopener,noreferrer');
   };
 
   const currentLesson = lessons[0] || null;
@@ -99,19 +102,22 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onNavigateTa
           <div className="flex items-center justify-between">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-semibold">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>{formatKazakhDate(new Date())}</span>
+              <span>{formatKazakhDate(now)}</span>
             </div>
-            <div className="text-xs font-mono text-slate-400 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700">
-              Топ: <strong className="text-sky-300">{currentStudent?.group || 'CS-2101'}</strong>
+            <div className="text-xs font-mono text-sky-200 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700">
+              {String(now.getHours()).padStart(2, '0')}:{String(now.getMinutes()).padStart(2, '0')}:{String(now.getSeconds()).padStart(2, '0')}
             </div>
           </div>
 
           <h2 className="text-2xl sm:text-3xl font-extrabold text-white mt-3 tracking-tight">
-            Қош келдіңіз, <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-blue-500">{currentStudent?.fullName?.split(' ')[0] || currentUser?.displayName?.split(' ')[0] || 'Студент'}</span>!
+            Қош келдіңіз, құрметті студент!
           </h2>
           <p className="text-xs sm:text-sm text-slate-300 mt-1">
-            Студенттік ID: <span className="font-mono text-sky-400 font-semibold">{currentStudent?.studentId || 'ST-2026-001'}</span> • {settings?.institutionName || 'Университет'}
+            SU, History class
           </p>
+          <div className="text-xs font-mono text-slate-400 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700 inline-block mt-2">
+            Топ: <strong className="text-sky-300">HC-2026-2027</strong>
+          </div>
         </div>
       </div>
 
@@ -138,7 +144,14 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onNavigateTa
           {/* 2. Сабаққа тіркелу (REAL QR SCANNER) */}
           <button
             id="student-btn-register-attendance"
-            onClick={() => setShowScanner(true)}
+            onClick={() => {
+              if (isQrBlocked()) {
+                setFailureReason(DOUBLE_MARK_MSG);
+                setShowFailureModal(true);
+                return;
+              }
+              setShowScanner(true);
+            }}
             className="group relative bg-gradient-to-br from-sky-600 via-blue-600 to-indigo-700 hover:from-sky-500 hover:to-blue-600 text-white rounded-3xl p-5 text-left transition-all duration-200 shadow-xl shadow-sky-600/30 active:scale-95 cursor-pointer flex flex-col justify-between min-h-[140px] border border-sky-400/40"
           >
             <div className="w-12 h-12 rounded-2xl bg-white/20 text-white flex items-center justify-center group-hover:scale-110 transition-transform shadow-inner">
@@ -222,7 +235,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onNavigateTa
               <div>
                 <div className="font-bold text-sm text-slate-100">Профиль</div>
                 <div className="text-[11px] text-slate-400">
-                  {currentUser?.email}
+                  {currentStudent?.fullName || currentUser?.displayName} • HC-2026-2027
                 </div>
               </div>
             </div>
@@ -272,6 +285,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onNavigateTa
           errorReason={failureReason}
           onRetry={() => {
             setShowFailureModal(false);
+            if (isQrBlocked()) return;
             setShowScanner(true);
           }}
           onClose={() => setShowFailureModal(false)}

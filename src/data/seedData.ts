@@ -3,7 +3,7 @@ import { Student, Teacher, AcademicGroup, Subject, Lesson, SystemSettings } from
 export const INITIAL_SETTINGS: SystemSettings = {
   appName: 'Студенттік қатысу жүйесі',
   googleSpreadsheetId: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
-  additionalAssignmentUrl: 'https://kundelik.kz',
+  additionalAssignmentUrl: 'https://t.me/sayasattanu_bot',
   qrValiditySeconds: 900, // 15 minutes
   allowAutoSheetSync: true,
   institutionName: 'Astana IT University / ҚазҰУ'

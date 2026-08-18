@@ -76,7 +76,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onBack }) => {
           <div className="mt-5 pt-4 border-t border-slate-800/80 grid grid-cols-2 gap-3 text-xs">
             <div className="bg-slate-950/60 rounded-xl p-2.5 border border-slate-800">
               <span className="text-slate-400 block text-[10px]">Академиялық топ:</span>
-              <span className="font-bold text-slate-100 font-mono text-sm">{currentStudent?.group || 'CS-2101'}</span>
+              <span className="font-bold text-slate-100 font-mono text-sm">HC-2026-2027</span>
             </div>
             <div className="bg-slate-950/60 rounded-xl p-2.5 border border-slate-800">
               <span className="text-slate-400 block text-[10px]">Рөлі:</span>

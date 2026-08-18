@@ -131,8 +131,15 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
     await stopScanner();
 
     try {
-      if (!currentUser?.email) {
-        throw new Error('Google аккаунт расталмаған.');
+      const { assertCanScanQr, markQrScan, DOUBLE_MARK_MSG } = await import('../utils/deviceLock');
+      try {
+        assertCanScanQr();
+      } catch {
+        throw new Error(DOUBLE_MARK_MSG);
+      }
+
+      if (!currentUser && !currentStudent) {
+        throw new Error('Аккаунт расталмаған.');
       }
 
       let parsed: any;
@@ -174,8 +181,8 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
         qrToken: parsed.token || '',
         studentId: currentStudent?.studentId || 'ST-2026-001',
         studentName: currentStudent?.fullName || currentUser.displayName || 'Студент',
-        studentEmail: currentUser.email,
-        group: currentStudent?.group || 'CS-2101',
+        studentEmail: currentUser?.email || '',
+        group: currentStudent?.group || 'HC-2026-2027',
         subject: parsed.subject || 'Сабақ',
         teacherId: parsed.teacherId || 'T-01',
         teacherName: parsed.teacherName || 'Оқытушы',
@@ -189,6 +196,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
 
       const { saveAttendanceRecord } = await import('../firebase/firestoreService');
       await saveAttendanceRecord(attendanceRecord);
+      markQrScan();
       onSuccess(attendanceRecord);
     } catch (error: any) {
       console.error('Validation API error:', error);

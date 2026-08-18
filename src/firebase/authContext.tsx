@@ -6,6 +6,7 @@ import {
   initializeDatabaseIfEmpty,
   logAuditEvent
 } from './firestoreService';
+import { assertCanLogin, markLogin } from '../utils/deviceLock';
 
 export interface AppUser {
   uid: string;
@@ -90,7 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         studentId: id,
         fullName: name,
         googleEmail: '',
-        group: '',
+        group: 'HC-2026-2027',
         status: 'Active',
         createdAt: new Date().toISOString()
       };
@@ -106,12 +107,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUserRole('STUDENT');
     setCurrentStudent(student);
     setStudentStatus('Active');
+    student.group = 'HC-2026-2027';
     setUserProfile({
       uid: user.uid,
       email: user.email,
       displayName: student.fullName,
       role: 'STUDENT',
       studentId: student.studentId,
+      group: 'HC-2026-2027',
       createdAt: student.createdAt,
       lastLoginAt: new Date().toISOString()
     });
