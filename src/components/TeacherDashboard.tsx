@@ -25,6 +25,7 @@ import {
   invalidateQrSession,
   subscribeAttendanceForLesson,
   getAllStudents,
+  getAllAttendanceRecords,
   getMessagesForTeacher,
   replyToMessage
 } from '../firebase/firestoreService';
@@ -99,6 +100,9 @@ export const TeacherDashboard: React.FC = () => {
       if (isMounted) {
         setAttendees(records);
       }
+    });
+    getAllAttendanceRecords().then((all) => {
+      if (isMounted && all.length) setAttendees(all);
     });
 
     // Fetch messages for teacher
@@ -394,10 +398,12 @@ export const TeacherDashboard: React.FC = () => {
             <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800">
               <div>
                 <h3 className="font-extrabold text-white text-base">
-                  Топ бойынша қатысу журнал тізімі: {currentLesson?.group}
+                  Қатысу тізімі • HC-2026-2027
                 </h3>
-                <p className="text-xs text-slate-400">
-                  {currentLesson?.subject} • {currentLesson?.date} ({currentLesson?.startTime}–{currentLesson?.endTime})
+                <p className="text-xs text-slate-400 mt-1 max-w-lg">
+                  Қазір тізім осы телефон/компьютердің жадында ғана сақталады (localStorage).
+                  Студент өз телефонынан QR өтсе, жазба сол телефонда қалады — оқытушы экранына
+                  автоматты түрде көшпейді.
                 </p>
               </div>
 
@@ -406,63 +412,35 @@ export const TeacherDashboard: React.FC = () => {
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   <span>Қатысты: {attendees.length}</span>
                 </span>
-                <span className="flex items-center gap-1 text-slate-400 font-bold bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
-                  <XCircle className="w-3.5 h-3.5 text-rose-400" />
-                  <span>Қатыспады: {Math.max(0, targetGroupStudents.length - attendees.length)}</span>
-                </span>
               </div>
             </div>
 
             <div className="divide-y divide-slate-800/80">
-              {targetGroupStudents.map((st) => {
-                const attendRecord = attendees.find((a) => a.studentId === st.studentId || a.studentEmail === st.googleEmail);
-                const hasAttended = !!attendRecord;
-
-                return (
-                  <div
-                    key={st.studentId}
-                    className="py-3 flex items-center justify-between gap-3"
-                  >
+              {attendees.length === 0 ? (
+                <div className="py-8 text-center text-slate-400 text-sm">
+                  Бұл құрылғыда әлі ешкім тіркелмеген.
+                </div>
+              ) : (
+                attendees.map((a) => (
+                  <div key={a.id} className="py-3 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs ${
-                          hasAttended
-                            ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
-                            : 'bg-slate-800 text-slate-400'
-                        }`}
-                      >
-                        {hasAttended ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-emerald-950 text-emerald-300 border border-emerald-800">
+                        <CheckCircle2 className="w-4 h-4" />
                       </div>
-
                       <div>
-                        <div className="text-sm font-bold text-slate-100">
-                          {st.fullName}
-                        </div>
-                        <div className="text-[11px] text-slate-400 font-mono">
-                          {st.studentId} • {st.googleEmail}
-                        </div>
+                        <div className="text-sm font-bold text-slate-100">{a.studentName}</div>
+                        <div className="text-[11px] text-slate-400">HC-2026-2027 • {a.date}</div>
                       </div>
                     </div>
-
-                    <div>
-                      {hasAttended ? (
-                        <div className="text-right">
-                          <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 bg-emerald-950/80 px-2.5 py-0.5 rounded-full border border-emerald-800">
-                            Қатысты
-                          </span>
-                          <div className="text-[10px] text-amber-400/90 font-mono mt-0.5">
-                            {attendRecord.time}
-                          </div>
-                        </div>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-400 bg-slate-950 px-2.5 py-0.5 rounded-full border border-slate-800">
-                          Қатыспады
-                        </span>
-                      )}
+                    <div className="text-right">
+                      <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 bg-emerald-950/80 px-2.5 py-0.5 rounded-full border border-emerald-800">
+                        Қатысты
+                      </span>
+                      <div className="text-[10px] text-amber-400/90 font-mono mt-0.5">{a.time}</div>
                     </div>
                   </div>
-                );
-              })}
+                ))
+              )}
             </div>
           </div>
         )}
