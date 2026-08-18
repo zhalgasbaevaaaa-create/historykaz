@@ -1,13 +1,15 @@
 export const SHEET_ID = '1Gpyy1fjJJzycEJAYk0CT9p6UnAHL3MiujmnMX8VFOeQ';
 export const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit`;
+export const DEFAULT_WEBHOOK =
+  'https://script.google.com/macros/s/AKfycbxCedUDeUl_Njbrwm5gmymX0D2RLALcx_ygUNQ-0fYQ7IOaOukk-UvMtYmefGnMWrR-sg/exec';
 const WEBHOOK_KEY = 'historykaz-sheets-webhook';
 const OPENSHEET = `https://opensheet.elk.sh/${SHEET_ID}/1`;
 
 export function getSheetsWebhook(): string {
   try {
-    return (localStorage.getItem(WEBHOOK_KEY) || '').trim();
+    return (localStorage.getItem(WEBHOOK_KEY) || DEFAULT_WEBHOOK).trim();
   } catch {
-    return '';
+    return DEFAULT_WEBHOOK;
   }
 }
 
