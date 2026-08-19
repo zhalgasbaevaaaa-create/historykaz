@@ -201,15 +201,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signInStudent = async (fullName: string, accessCode: string) => {
+  const signInStudent = async (fullName: string, accessCode: string, email?: string) => {
     if (accessCode.trim() !== STUDENT_ACCESS_CODE) {
       throw new Error('Қате доступ');
     }
     if (fullName.trim().length < 3) {
       throw new Error('Аты-жөніңізді толық жазыңыз');
     }
+    const mail = (email || '').trim().toLowerCase();
+    if (mail && !mail.includes('@')) {
+      throw new Error('Gmail-ді дұрыс жазыңыз');
+    }
     assertCanLogin();
-    await applyStudentRecord(fullName, '', null);
+    await applyStudentRecord(fullName, mail, null);
     markLogin();
   };
 
