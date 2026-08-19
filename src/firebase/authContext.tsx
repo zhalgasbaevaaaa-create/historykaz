@@ -1,12 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { UserProfile, Student, UserRole, StudentStatus } from '../types';
-import {
-  getAllStudents,
-  saveStudent,
-  initializeDatabaseIfEmpty,
-  logAuditEvent
-} from './firestoreService';
+import { getAllStudents, saveStudent, initializeDatabaseIfEmpty, logAuditEvent } from './firestoreService';
 import { assertCanLogin, markLogin } from '../utils/deviceLock';
+import { supabase, appRedirectUrl } from '../lib/supabase';
 
 export interface AppUser {
   uid: string;
@@ -78,54 +75,89 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem(STUDENT_SESSION);
   };
 
-  const applyStudent = async (fullName: string) => {
-    const name = fullName.trim().replace(/\s+/g, ' ');
-    const id = slugId(name);
+  const applyStudentRecord = async (fullName: string, email: string, photoURL: string | null) => {
+    const name = fullName.trim().replace(/\s+/g, ' ') || email.split('@')[0];
+    const id = slugId(email || name);
     const all = await getAllStudents();
     let student = all.find(
-      (s) => s.fullName.trim().toLowerCase() === name.toLowerCase() || s.studentId === id
+      (s) =>
+        (email && s.googleEmail.toLowerCase() === email.toLowerCase()) ||
+        s.fullName.trim().toLowerCase() === name.toLowerCase() ||
+        s.studentId === id
     );
     if (!student) {
       student = {
         id,
         studentId: id,
         fullName: name,
-        googleEmail: '',
+        googleEmail: email,
         group: 'HC-2026-2027',
         status: 'Active',
         createdAt: new Date().toISOString()
       };
       await saveStudent(student);
+    } else {
+      student = { ...student, fullName: name, googleEmail: email || student.googleEmail, group: 'HC-2026-2027' };
+      await saveStudent(student);
     }
     const user: AppUser = {
       uid: student.studentId,
-      email: student.googleEmail || '',
+      email: student.googleEmail || email,
       displayName: student.fullName,
-      photoURL: null
+      photoURL
     };
     setCurrentUser(user);
     setUserRole('STUDENT');
     setCurrentStudent(student);
     setStudentStatus('Active');
-    student.group = 'HC-2026-2027';
     setUserProfile({
       uid: user.uid,
       email: user.email,
       displayName: student.fullName,
+      photoURL: photoURL || undefined,
       role: 'STUDENT',
       studentId: student.studentId,
       group: 'HC-2026-2027',
       createdAt: student.createdAt,
       lastLoginAt: new Date().toISOString()
     });
-    localStorage.setItem(STUDENT_SESSION, JSON.stringify({ fullName: student.fullName }));
+    localStorage.setItem(
+      STUDENT_SESSION,
+      JSON.stringify({ fullName: student.fullName, email: user.email, photoURL })
+    );
     localStorage.removeItem(TEACHER_SESSION);
-    logAuditEvent('STUDENT_LOGIN', student.fullName, 'STUDENT', 'Ортақ доступпен кіру');
+    logAuditEvent('STUDENT_LOGIN', user.email || student.fullName, 'STUDENT', 'Кіру');
+  };
+
+  const applyGoogleUser = async (su: SupabaseUser) => {
+    const meta = su.user_metadata || {};
+    const email = (su.email || '').toLowerCase();
+    const name = String(meta.full_name || meta.name || email.split('@')[0] || 'Студент');
+    const photo = (meta.avatar_url || meta.picture || null) as string | null;
+    await applyStudentRecord(name, email, photo);
   };
 
   useEffect(() => {
     const boot = async () => {
       await initializeDatabaseIfEmpty().catch(console.warn);
+
+      const { data } = await supabase.auth.getSession();
+      if (data.session?.user) {
+        const hadLocal = !!localStorage.getItem(STUDENT_SESSION);
+        try {
+          if (!hadLocal) assertCanLogin();
+          await applyGoogleUser(data.session.user);
+          if (!hadLocal) markLogin();
+        } catch (err: any) {
+          await supabase.auth.signOut();
+          localStorage.removeItem(STUDENT_SESSION);
+          setLoading(false);
+          return;
+        }
+        setLoading(false);
+        return;
+      }
+
       if (localStorage.getItem(TEACHER_SESSION) === '1') {
         applyTeacher();
         setLoading(false);
@@ -135,7 +167,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const saved = localStorage.getItem(STUDENT_SESSION);
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (parsed.fullName) await applyStudent(parsed.fullName);
+          if (parsed.fullName) await applyStudentRecord(parsed.fullName, parsed.email || '', parsed.photoURL || null);
         }
       } catch {
         localStorage.removeItem(STUDENT_SESSION);
@@ -143,10 +175,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     };
     boot();
+
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        try {
+          if (!localStorage.getItem(STUDENT_SESSION)) {
+            assertCanLogin();
+            await applyGoogleUser(session.user);
+            markLogin();
+          }
+        } catch {
+          await supabase.auth.signOut();
+        }
+      }
+    });
+    return () => {
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   const signInWithGoogle = async () => {
-    throw new Error('Google кіру өшірілген. Ортақ доступты пайдаланыңыз.');
+    localStorage.removeItem(TEACHER_SESSION);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: appRedirectUrl(),
+        queryParams: { prompt: 'select_account' }
+      }
+    });
+    if (error) {
+      throw new Error(error.message || 'Google арқылы кіру мүмкін болмады. Қайталап көріңіз.');
+    }
   };
 
   const signInStudent = async (fullName: string, accessCode: string) => {
@@ -157,7 +216,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw new Error('Аты-жөніңізді толық жазыңыз');
     }
     assertCanLogin();
-    await applyStudent(fullName);
+    await applyStudentRecord(fullName, '', null);
     markLogin();
   };
 
@@ -165,6 +224,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (password !== TEACHER_PASSWORD) {
       throw new Error('Қате құпиясөз');
     }
+    await supabase.auth.signOut().catch(() => undefined);
     applyTeacher();
     logAuditEvent('TEACHER_LOGIN', 'zhalgasbaevaaaa@gmail.com', 'TEACHER', 'Оқытушы кірді');
   };
@@ -172,6 +232,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     localStorage.removeItem(TEACHER_SESSION);
     localStorage.removeItem(STUDENT_SESSION);
+    await supabase.auth.signOut().catch(() => undefined);
     setCurrentUser(null);
     setUserProfile(null);
     setCurrentStudent(null);
@@ -182,7 +243,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const switchRoleForTesting = (_role: UserRole) => {};
 
   const refreshStudentData = async () => {
-    if (currentStudent?.fullName) await applyStudent(currentStudent.fullName);
+    if (currentStudent?.fullName) {
+      await applyStudentRecord(currentStudent.fullName, currentStudent.googleEmail || '', currentUser?.photoURL || null);
+    }
   };
 
   const isAuthorized = !!currentUser && (userRole === 'TEACHER' || studentStatus === 'Active');
