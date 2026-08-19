@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kazakh-attendance-pwa-v3';
+const CACHE_NAME = 'kazakh-attendance-pwa-v4';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -21,7 +21,14 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const url = event.request.url;
-  if (url.includes('script.google.com') || url.includes('opensheet') || url.includes('/api/')) {
+  if (
+    url.includes('script.google.com') ||
+    url.includes('opensheet') ||
+    url.includes('supabase.co') ||
+    url.includes('/api/') ||
+    url.includes('code=') ||
+    url.includes('access_token')
+  ) {
     return;
   }
 
