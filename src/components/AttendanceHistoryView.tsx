@@ -56,10 +56,10 @@ export const AttendanceHistoryView: React.FC<AttendanceHistoryViewProps> = ({ on
           <div className="flex items-center gap-3">
             <button
               onClick={onBack}
-              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
-              aria-label="Артқа"
+              className="inline-flex items-center gap-1.5 bg-sky-600 hover:bg-sky-500 text-white font-extrabold px-3.5 py-2 rounded-xl text-sm"
             >
               <ChevronLeft className="w-5 h-5" />
+              АРТҚА
             </button>
             <div>
               <h2 className="text-lg sm:text-xl font-extrabold text-white leading-tight flex items-center gap-2">

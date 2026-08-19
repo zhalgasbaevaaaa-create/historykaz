@@ -29,16 +29,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onBack }) => {
       {/* Header */}
       <div className="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-20 backdrop-blur-md px-4 py-4">
         <div className="max-w-xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onBack}
-              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
-              aria-label="Артқа"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <h2 className="text-lg sm:text-xl font-extrabold text-white">Профиль</h2>
-          </div>
+          <button
+            onClick={onBack}
+            className="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-500 text-white font-extrabold px-4 py-2.5 rounded-xl text-sm"
+          >
+            <ChevronLeft className="w-5 h-5" />
+            АРТҚА
+          </button>
+          <h2 className="text-lg sm:text-xl font-extrabold text-white">Профиль</h2>
         </div>
       </div>
 
@@ -119,6 +117,15 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onBack }) => {
             <span className="font-bold text-emerald-400">Қорғалған (RBAC Active)</span>
           </div>
         </div>
+
+        <button
+          type="button"
+          onClick={onBack}
+          className="w-full bg-sky-600 hover:bg-sky-500 text-white font-extrabold py-3.5 px-5 rounded-2xl flex items-center justify-center gap-2 text-sm"
+        >
+          <ChevronLeft className="w-5 h-5" />
+          АРТҚА — басты мәзір
+        </button>
 
         {/* Sign Out Button */}
         <button
