@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   GraduationCap,
   ShieldCheck,
@@ -22,6 +22,12 @@ export const LoginScreen: React.FC = () => {
   const [teacherPassword, setTeacherPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [accessCode, setAccessCode] = useState('');
+
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const err = q.get('error_description') || q.get('error');
+    if (err) setAuthError(decodeURIComponent(err));
+  }, []);
 
   const handleGoogle = async () => {
     setSigningIn('GOOGLE');

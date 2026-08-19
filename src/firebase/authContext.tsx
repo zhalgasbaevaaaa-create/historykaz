@@ -143,16 +143,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const { data } = await supabase.auth.getSession();
       if (data.session?.user) {
-        const hadLocal = !!localStorage.getItem(STUDENT_SESSION);
         try {
-          if (!hadLocal) assertCanLogin();
           await applyGoogleUser(data.session.user);
-          if (!hadLocal) markLogin();
-        } catch (err: any) {
+          if (window.location.search.includes('code=') || window.location.hash.includes('access_token')) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        } catch {
           await supabase.auth.signOut();
-          localStorage.removeItem(STUDENT_SESSION);
-          setLoading(false);
-          return;
         }
         setLoading(false);
         return;
@@ -179,13 +176,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         try {
-          if (!localStorage.getItem(STUDENT_SESSION)) {
-            assertCanLogin();
-            await applyGoogleUser(session.user);
-            markLogin();
-          }
+          await applyGoogleUser(session.user);
         } catch {
-          await supabase.auth.signOut();
+          /* keep trying local session */
         }
       }
     });
