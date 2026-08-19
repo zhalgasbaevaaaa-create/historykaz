@@ -14,7 +14,7 @@ import {
   BookOpen,
   Calendar,
   Sparkles,
-  Search
+  Trash2
 } from 'lucide-react';
 import { useAuth } from '../firebase/authContext';
 import { Lesson, QrSession, AttendanceRecord, Student, StudentMessage } from '../types';
@@ -27,7 +27,9 @@ import {
   getAllStudents,
   getAllAttendanceRecords,
   getMessagesForTeacher,
-  replyToMessage
+  replyToMessage,
+  deleteMessage,
+  deleteAllMessagesForTeacher
 } from '../firebase/firestoreService';
 import { formatSecondsToTimer } from '../utils/kazakhDate';
 import {
@@ -203,6 +205,17 @@ export const TeacherDashboard: React.FC = () => {
       setActiveSession((prev) => (prev ? { ...prev, status: 'Invalidated' } : null));
       setRemainingSeconds(0);
     }
+  };
+
+  const handleDeleteMessage = async (msgId: string) => {
+    await deleteMessage(msgId);
+    setMessages((prev) => prev.filter((m) => m.id !== msgId));
+  };
+
+  const handleDeleteAllMessages = async () => {
+    const currentTeacherId = currentLesson?.teacherId || 'T-01';
+    await deleteAllMessagesForTeacher(currentTeacherId);
+    setMessages([]);
   };
 
   const handleSendReply = async (msgId: string) => {
@@ -503,9 +516,19 @@ export const TeacherDashboard: React.FC = () => {
                           {msg.group} • {msg.studentEmail} • {msg.studentId}
                         </div>
                       </div>
-                      <span className="text-[11px] text-slate-400">
+                    <div className="flex items-start gap-2">
+                      <span className="text-[11px] text-slate-400 whitespace-nowrap">
                         {new Date(msg.createdAt).toLocaleDateString('kk-KZ')}
                       </span>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteMessage(msg.id)}
+                        className="inline-flex items-center gap-1 bg-rose-950 hover:bg-rose-900 border border-rose-800 text-rose-200 font-bold px-2.5 py-1 rounded-lg text-[11px]"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Жою
+                      </button>
+                    </div>
                     </div>
 
                     <div className="bg-slate-950 rounded-2xl p-3 border border-slate-800 text-xs text-slate-200">

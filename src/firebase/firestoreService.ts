@@ -218,16 +218,28 @@ export async function sendStudentMessage(
   });
 }
 
-export async function getMessagesForTeacher(teacherId: string): Promise<StudentMessage[]> {
-  return loadDb()
-    .messages.filter((m) => m.teacherId === teacherId)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+export async function getMessagesForTeacher(_teacherId?: string): Promise<StudentMessage[]> {
+  return loadDb().messages.sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
 }
 
 export async function getMessagesForStudent(studentId: string): Promise<StudentMessage[]> {
   return loadDb()
     .messages.filter((m) => m.studentId === studentId)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export async function deleteMessage(messageId: string): Promise<void> {
+  mutateDb((db) => {
+    db.messages = db.messages.filter((m) => m.id !== messageId);
+  });
+}
+
+export async function deleteAllMessagesForTeacher(_teacherId?: string): Promise<void> {
+  mutateDb((db) => {
+    db.messages = [];
+  });
 }
 
 export async function replyToMessage(messageId: string, replyText: string): Promise<void> {
