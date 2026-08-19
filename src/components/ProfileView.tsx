@@ -91,13 +91,15 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onBack }) => {
             Байланыстырылған деректер
           </h4>
 
+          {currentUser?.email ? (
           <div className="flex items-center justify-between p-3 bg-slate-950/70 rounded-2xl border border-slate-800/80">
             <div className="flex items-center gap-2.5">
               <Mail className="w-4 h-4 text-sky-400" />
-              <span className="text-slate-300">Google Email:</span>
+              <span className="text-slate-300">Email:</span>
             </div>
-            <span className="font-mono text-slate-100 font-semibold">{currentUser?.email}</span>
+            <span className="font-mono text-slate-100 font-semibold">{currentUser.email}</span>
           </div>
+          ) : null}
 
           <div className="flex items-center justify-between p-3 bg-slate-950/70 rounded-2xl border border-slate-800/80">
             <div className="flex items-center gap-2.5">

@@ -180,7 +180,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
         sessionId: parsed.sessionId,
         qrToken: parsed.token || '',
         studentId: currentStudent?.studentId || 'ST-2026-001',
-        studentName: currentStudent?.fullName || currentUser.displayName || 'Студент',
+        studentName: currentStudent?.fullName || currentUser?.displayName || 'Студент',
         studentEmail: currentUser?.email || '',
         group: currentStudent?.group || 'HC-2026-2027',
         subject: parsed.subject || 'Сабақ',

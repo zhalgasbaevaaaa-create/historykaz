@@ -52,6 +52,7 @@ export const TeacherDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'qr' | 'attendance' | 'messages'>('qr');
   const [webhookInput, setWebhookInput] = useState(getSheetsWebhook());
   const [sheetNote, setSheetNote] = useState('');
+  const [replyInput, setReplyInput] = useState<{ [msgId: string]: string }>({});
 
   // 1. Fetch Lessons & Students on mount
   useEffect(() => {
@@ -103,16 +104,38 @@ export const TeacherDashboard: React.FC = () => {
     checkActiveSession();
 
     // Subscribe to live real-time attendance updates for this lesson
-    const unsubscribe = subscribeAttendanceForLesson(selectedLessonId, (records) => {
-      if (isMounted) {
-        setAttendees(records);
+    const pullSheet = async () => {
+      try {
+        const rows = await fetchAttendanceFromSheet();
+        if (!isMounted) return;
+        if (!rows.length) return;
+        setAttendees(
+          rows.map((r, i) => ({
+            id: 'sheet-' + i + '-' + r.studentName + '-' + r.time,
+            lessonId: 'OPEN-SESSION',
+            sessionId: '',
+            qrToken: '',
+            studentId: r.studentName,
+            studentName: r.studentName,
+            studentEmail: '',
+            group: r.group || 'HC-2026-2027',
+            subject: r.subject || 'Сабақ',
+            teacherId: 'T-01',
+            teacherName: 'Профессор - Сарсенбаев А.Б.',
+            date: r.date,
+            time: r.time,
+            timestamp: Number(r.timestamp) || Date.now(),
+            status: 'Қатысты',
+            sheetsSyncStatus: 'Synced'
+          }))
+        );
+      } catch {
+        /* ignore */
       }
-    });
-    getAllAttendanceRecords().then((all) => {
-      if (isMounted && all.length) setAttendees(all);
-    });
+    };
+    pullSheet();
+    const sheetTimer = window.setInterval(pullSheet, 4000);
 
-    // Fetch messages for teacher
     const currentTeacherId = lessons.find(l => l.id === selectedLessonId)?.teacherId || 'T-01';
     getMessagesForTeacher(currentTeacherId).then((msgs) => {
       if (isMounted) setMessages(msgs);
@@ -120,8 +143,7 @@ export const TeacherDashboard: React.FC = () => {
 
     return () => {
       isMounted = false;
-      unsubscribe();
-      clearInterval(sheetTimer);
+      window.clearInterval(sheetTimer);
     };
   }, [selectedLessonId, lessons]);
 
@@ -384,9 +406,7 @@ export const TeacherDashboard: React.FC = () => {
                   </div>
                   <div>
                     <div className="text-xs text-slate-400">Нақты уақытта тіркелгендер:</div>
-                    <div className="text-lg font-bold text-white">
-                      {attendees.length} / {targetGroupStudents.length} студент
-                    </div>
+                    <div className="text-lg font-bold text-white">{attendees.length} студент</div>
                   </div>
                 </div>
                 <button
@@ -424,37 +444,10 @@ export const TeacherDashboard: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-slate-950 border border-slate-800 rounded-2xl p-3 space-y-2 text-xs text-slate-300">
-              <div className="font-bold text-amber-300">Бір рет: Sheet-ке жазу үшін Apps Script</div>
-              <ol className="list-decimal pl-4 space-y-1">
-                <li>Sheet ішінде Extensions → Apps Script</li>
-                <li>sheets-bridge.gs кодын қойып, Deploy → New deployment → Web app</li>
-                <li>Execute as: Me • Who has access: Anyone</li>
-                <li>Шыққан URL-ді төменге қойыңыз</li>
-              </ol>
-              <input
-                value={webhookInput}
-                onChange={(e) => setWebhookInput(e.target.value)}
-                placeholder="https://script.google.com/macros/s/.../exec"
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  setSheetsWebhook(webhookInput);
-                  setSheetNote('Сақталды. Студент QR өткенде жол Sheet-ке жазылады.');
-                }}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-2 rounded-xl"
-              >
-                Webhook сақтау
-              </button>
-              {sheetNote && <div className="text-emerald-400">{sheetNote}</div>}
-            </div>
-
             <div className="divide-y divide-slate-800/80">
               {attendees.length === 0 ? (
                 <div className="py-8 text-center text-slate-400 text-sm">
-                  Бұл құрылғыда әлі ешкім тіркелмеген.
+                  Кестеде әлі қатысу жазбасы жоқ.
                 </div>
               ) : (
                 attendees.map((a) => (

@@ -156,7 +156,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (fullName.trim().length < 3) {
       throw new Error('Аты-жөніңізді толық жазыңыз');
     }
+    assertCanLogin();
     await applyStudent(fullName);
+    markLogin();
   };
 
   const signInTeacher = async (password: string) => {

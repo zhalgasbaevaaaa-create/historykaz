@@ -27,14 +27,29 @@ export interface SheetAttendance {
   timestamp?: string | number;
 }
 
+function safeCell(value: string): string {
+  const t = String(value || '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 200);
+  if (/^[=+\-@]/.test(t)) return `'${t}`;
+  return t;
+}
+
 export async function pushAttendanceToSheet(row: SheetAttendance): Promise<void> {
   const webhook = getSheetsWebhook();
   if (webhook) {
+    const payload: SheetAttendance = {
+      studentName: safeCell(row.studentName),
+      group: safeCell(row.group || 'HC-2026-2027'),
+      date: safeCell(row.date),
+      time: safeCell(row.time),
+      subject: safeCell(row.subject),
+      status: 'Қатысты',
+      timestamp: row.timestamp
+    };
     await fetch(webhook, {
       method: 'POST',
       mode: 'no-cors',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(row)
+      body: JSON.stringify(payload)
     });
     return;
   }
