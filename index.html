@@ -22,6 +22,19 @@
   <body class="bg-slate-950 text-slate-100 antialiased selection:bg-sky-500 selection:text-white min-h-screen">
     <div id="root"></div>
     <script>
+      document.addEventListener('contextmenu', function (e) {
+        e.preventDefault();
+      });
+      document.addEventListener('keydown', function (e) {
+        var k = e.key.toLowerCase();
+        if (k === 'f12') e.preventDefault();
+        if (e.ctrlKey && e.shiftKey && (k === 'i' || k === 'j' || k === 'c')) e.preventDefault();
+        if (e.ctrlKey && (k === 'u' || k === 's')) e.preventDefault();
+        if (e.metaKey && e.altKey && k === 'i') e.preventDefault();
+      });
+      document.addEventListener('dragstart', function (e) {
+        e.preventDefault();
+      });
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           const swUrl = new URL('sw.js', window.location.href);
